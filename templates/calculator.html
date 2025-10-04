@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbon Footprint Calculator | GreenThread</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a3e2f;
+            --primary-light: #2c5e4a;
+            --accent: #ffdd57;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #28a745;
+            --error: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(rgba(26, 62, 47, 0.85), rgba(44, 94, 74, 0.85)), 
+                        url('https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: var(--light);
+            padding: 20px;
+        }
+        
+        .calculator-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .calculator-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .calculator-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .calculator-header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255,255,255,0.25);
+            box-shadow: 0 0 0 3px rgba(255, 221, 87, 0.2);
+        }
+        
+        select option {
+            background: var(--primary-light);
+            color: white;
+        }
+        
+        input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            color: var(--dark);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .calculate-btn:hover {
+            background: #ffd700;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 221, 87, 0.3);
+        }
+        
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+        
+        .result-container {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+            text-align: center;
+            display: none;
+        }
+        
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-top: 0.5rem;
+        }
+        
+        .footer-links {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .footer-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .footer-links a:hover {
+            color: #ffd700;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 576px) {
+            .calculator-container {
+                padding: 1.5rem;
+            }
+            
+            .calculator-header h2 {
+                font-size: 1.7rem;
+            }
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--dark);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="calculator-header">
+            <h2><i class="fas fa-leaf"></i> Carbon Footprint Calculator</h2>
+            <p>Calculate the environmental impact of your clothing choices</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="material"><i class="fas fa-tshirt"></i> Material:</label>
+            <select id="material" required>
+                <option value="" disabled selected>Select Material</option>
+                {% for material in materials %}
+                <option value="{{ material['material'] }}">{{ material['material'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="washing_frequency"><i class="fas fa-water"></i> Washing Frequency:</label>
+            <select id="washing_frequency" required>
+                <option value="" disabled selected>Select Frequency</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="drying_method"><i class="fas fa-wind"></i> Drying Method:</label>
+            <select id="drying_method" required>
+                <option value="" disabled selected>Select Drying Method</option>
+                <option value="Machine">Machine Dry</option>
+                <option value="Air">Air Dry</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="ironing_frequency"><i class="fas fa-iron"></i> Ironing Frequency:</label>
+            <select id="ironing_frequency" required>
+                <option value="" disabled selected>Select Frequency</option>
+                <option value="Rarely">Rarely</option>
+                <option value="Often">Often</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="weight"><i class="fas fa-weight-hanging"></i> Weight (kg):</label>
+            <input type="number" id="weight" placeholder="Enter weight in kilograms" step="0.1" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label for="is_wearing_today"><i class="fas fa-user-check"></i> Wearing Today?</label>
+            <select id="is_wearing_today" required>
+                <option value="yes">Yes</option>
+                <option value="no" selected>No</option>
+            </select>
+        </div>
+        
+        <button id="calculateButton" class="calculate-btn">
+            <span id="buttonText">Calculate Footprint</span>
+            <div class="spinner" id="spinner"></div>
+        </button>
+        
+        <div class="result-container" id="resultContainer">
+            <p>Your estimated carbon footprint:</p>
+            <div class="result-value" id="result"></div>
+            <p id="ecoMessage" style="margin-top: 0.5rem; font-size: 0.9rem;"></p>
+        </div>
+        
+        <div class="footer-links">
+            <a href="user_data"><i class="fas fa-chart-line"></i> View My Sustainability Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const calculateBtn = document.getElementById('calculateButton');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultText = document.getElementById('result');
+            const ecoMessage = document.getElementById('ecoMessage');
+            const spinner = document.getElementById('spinner');
+            const buttonText = document.getElementById('buttonText');
+            
+            calculateBtn.addEventListener('click', async function() {
+                // Validate required fields
+                const material = document.getElementById('material').value;
+                const washingFreq = document.getElementById('washing_frequency').value;
+                const dryingMethod = document.getElementById('drying_method').value;
+                const ironingFreq = document.getElementById('ironing_frequency').value;
+                
+                if (!material || !washingFreq || !dryingMethod || !ironingFreq) {
+                    showResult('Please fill all required fields', true);
+                    return;
+                }
+                
+                // Show loading state
+                buttonText.textContent = 'Calculating...';
+                spinner.style.display = 'block';
+                calculateBtn.disabled = true;
+                
+                try {
+                    const username = await getCurrentUser();
+                    if (!username) {
+                        showResult('Please login to calculate your footprint', true);
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append("username", username);
+                    formData.append("material", material);
+                    formData.append("washing_frequency", washingFreq);
+                    formData.append("drying_method", dryingMethod);
+                    formData.append("ironing_frequency", ironingFreq);
+                    
+                    const weight = document.getElementById('weight').value.trim();
+                    formData.append("weight", weight ? parseFloat(weight) : 0);
+                    
+                    formData.append("is_wearing_today", document.getElementById('is_wearing_today').value);
+                    
+                    const response = await fetch("/calculate", {
+                        method: "POST",
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        const footprint = data.carbon_footprint || '0.00';
+                        showResult(`${footprint} kg CO₂`, false);
+                        
+                        // Add eco-friendly message based on footprint
+                        const footprintValue = parseFloat(footprint);
+                        if (footprintValue < 1.0) {
+                            ecoMessage.textContent = "🌱 Excellent! This is an eco-friendly choice.";
+                            ecoMessage.style.color = "var(--success)";
+                        } else if (footprintValue < 2.5) {
+                            ecoMessage.textContent = "🌿 Good choice! Consider more sustainable options.";
+                            ecoMessage.style.color = "#a3c14a";
+                        } else {
+                            ecoMessage.textContent = "⚠️ High impact. Explore more sustainable alternatives.";
+                            ecoMessage.style.color = "var(--error)";
+                        }
+                    } else {
+                        showResult(data.error || "Calculation failed. Please try again.", true);
+                    }
+                } catch (error) {
+                    console.error("Calculation error:", error);
+                    showResult("Network error. Please try again.", true);
+                } finally {
+                    // Reset button state
+                    buttonText.textContent = 'Calculate Footprint';
+                    spinner.style.display = 'none';
+                    calculateBtn.disabled = false;
+                }
+            });
+            
+            async function getCurrentUser() {
+                try {
+                    const response = await fetch('/current_user');
+                    if (!response.ok) throw new Error('Not logged in');
+                    const data = await response.json();
+                    return data.username;
+                } catch (error) {
+                    return null;
+                }
+            }
+            
+            function showResult(message, isError) {
+                resultText.textContent = message;
+                resultContainer.style.display = 'block';
+                resultText.style.color = isError ? 'var(--error)' : 'var(--accent)';
+                ecoMessage.textContent = '';
+            }
+        });
+    </script>
+</body>
+</html>

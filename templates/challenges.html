@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenges</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+        
+        .challenges-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding-bottom: 3rem;
+        }
+        
+        .challenge-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .challenge-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .challenge-card h2 {
+            margin: 0;
+            color: #444;
+            font-size: 1.4rem;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+            flex-grow: 1;
+        }
+        
+        .card-body p {
+            margin: 0 0 1rem 0;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .credit-points {
+            display: inline-block;
+            background: #f0f4ff;
+            color: #6e8efb;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .card-footer {
+            padding: 1rem 1.5rem;
+            background: #f9fafc;
+            border-top: 1px solid #eee;
+        }
+        
+        .btn-complete {
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-size: 1rem;
+        }
+        
+        .btn-complete:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(110, 142, 251, 0.3);
+        }
+        
+        .btn-complete:disabled {
+            background: #cccccc;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+        
+        .completed-badge {
+            background: #4caf50;
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 5px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .completed-badge svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .challenge-card.completed {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #f44336;
+        }
+        
+        @media (max-width: 768px) {
+            .challenges-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .notification {
+                top: auto;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                transform: translateY(150%);
+            }
+            
+            .notification.show {
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Challenges</h1>
+        <p class="subtitle">Complete challenges to earn rewards and level up</p>
+    </div>
+    
+    <div class="challenges-container">
+        {% for challenge in challenges %}
+        <div class="challenge-card {% if challenge.is_completed %}completed{% endif %}" data-challenge-id="{{ challenge.id }}">
+            <div class="card-header">
+                <h2>{{ challenge.title }}</h2>
+            </div>
+            <div class="card-body">
+                <p>{{ challenge.description }}</p>
+                <span class="credit-points">{{ challenge.credit_points }} Credit Points</span>
+                <p>Completed: {{ challenge.completion_count }} times</p>
+            </div>
+            <div class="card-footer">
+                {% if not challenge.is_completed %}
+                <form action="{{ url_for('complete_challenge', challenge_id=challenge.id) }}" method="POST" class="challenge-form">
+                    <button type="submit" class="btn-complete">Complete Challenge</button>
+                </form>
+                {% else %}
+                <div class="completed-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                    Completed
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="notification" class="notification">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span id="notification-message"></span>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const challengeForms = document.querySelectorAll('.challenge-form');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        
+        challengeForms.forEach(form => {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('.btn-complete');
+                const challengeCard = this.closest('.challenge-card');
+                const challengeId = challengeCard.dataset.challengeId;
+                
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+                
+                try {
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Challenge completed successfully
+                        challengeCard.classList.add('completed');
+                        
+                        // Replace form with completed badge
+                        const cardFooter = this.closest('.card-footer');
+                        cardFooter.innerHTML = `
+                            <div class="completed-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                </svg>
+                                Completed
+                            </div>
+                        `;
+                        
+                        // Show success notification
+                        showNotification(`Challenge completed! +${data.credit_points} points`, 'success');
+                        
+                        // You could also update the user's credit points display here if shown elsewhere
+                    } else {
+                        if (data.completed) {
+                            showNotification('You already completed this challenge!', 'error');
+                        } else {
+                            showNotification(data.error || 'Failed to complete challenge', 'error');
+                        }
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Complete Challenge';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showNotification('An error occurred', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Complete Challenge';
+                }
+            });
+        });
+        
+        function showNotification(message, type = 'success') {
+            notificationMessage.textContent = message;
+            notification.className = 'notification';
+            notification.classList.add(type === 'error' ? 'error' : 'success');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    });
+    </script>
+</body>
+</html>

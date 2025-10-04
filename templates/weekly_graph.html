@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Carbon Footprint Report</title>
+    <meta property="og:title" content="{{ username }}'s Weekly Carbon Footprint Report">
+    <meta property="og:description" content="I reduced my carbon footprint to {{ total_emission }} kg CO₂ this week! 🌱">
+    <meta property="og:image" content="{{ graph_url }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #00a86b;
+            --primary-dark: #007a4d;
+            --secondary: #5d93ff;
+            --accent: #ffc857;
+            --danger: #ff6b6b;
+            --text: #2d3436;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--light-bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 2px;
+        }
+        
+        h1 {
+            color: var(--primary);
+            margin: 0;
+            font-weight: 700;
+            font-size: 2.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text);
+            opacity: 0.8;
+            margin-top: 10px;
+            font-weight: 400;
+        }
+        
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .tile {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border-top: 5px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .tile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            color: var(--primary-dark);
+        }
+        
+        .tile-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .tile-title {
+            font-weight: 600;
+            font-size: 1.3rem;
+            margin: 0;
+        }
+        
+        .tile-content {
+            flex-grow: 1;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: rgba(0,0,0,0.02);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin: 5px 0;
+            color: var(--primary-dark);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .highlight-stat {
+            background: linear-gradient(135deg, rgba(0,168,107,0.1), rgba(93,147,255,0.1));
+            border: 1px solid rgba(0,168,107,0.2);
+        }
+        
+        .highlight-stat .stat-value {
+            color: var(--danger);
+        }
+        
+        .graph-tile {
+            grid-column: span 2;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .graph-container {
+            padding: 20px;
+        }
+        
+        img {
+            width: 100%;
+            border-radius: 12px;
+            display: block;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .no-data {
+            padding: 30px;
+            text-align: center;
+            color: var(--danger);
+            font-weight: 500;
+        }
+        
+        .tips-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        
+        .tips-list li {
+            padding: 12px 0;
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+        }
+        
+        .tips-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .tip-icon {
+            width: 30px;
+            height: 30px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+            color: var(--text);
+            font-size: 14px;
+        }
+        
+        .share-section {
+            background: linear-gradient(135deg, #f0f7ff, #f8fcff);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .share-title {
+            color: var(--primary-dark);
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        .share-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            gap: 8px;
+        }
+        
+        .share-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        
+        .download-btn {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .facebook-btn {
+            background-color: #1877F2;
+            color: white;
+        }
+        
+        .twitter-btn {
+            background-color: #1DA1F2;
+            color: white;
+        }
+        
+        .other-btn {
+            background-color: var(--accent);
+            color: var(--text);
+        }
+        
+        @media (max-width: 768px) {
+            .tile-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .graph-tile {
+                grid-column: span 1;
+            }
+            
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .share-buttons {
+                flex-direction: column;
+            }
+            
+            .share-btn {
+                width: 100%;
+            }
+        }
+        
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .tile {
+            animation: fadeIn 0.5s ease-out forwards;
+            animation-delay: calc(var(--order) * 0.1s);
+        }
+        
+        .share-section {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="report-section">
+        <div class="header">
+            <h1>{{ username | default('User') }}'s Carbon Footprint</h1>
+            <div class="subtitle">Weekly Report • {{ current_date | default('This Week') }}</div>
+        </div>
+        
+        <div class="tile-grid">
+            <!-- Main Graph Tile -->
+            <div class="tile graph-tile" style="--order: 0;">
+                <div class="tile-header">
+                    <div class="tile-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h2 class="tile-title">Weekly Emissions Overview</h2>
+                </div>
+                <div class="tile-content graph-container">
+                    {% if graph_url %}
+                        <img src="{{ graph_url }}" alt="Weekly Carbon Footprint Graph">
+                    {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-exclamation-circle"></i> No data available for this week.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Total Emissions Tile -->
+            <div class="tile" style="--order: 1;">
+                <div class="tile-header">
+                    <div class="tile-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <h2 class="tile-title">Total Emissions</h2>
+                </div>
+                <div class="tile-content">
+                    <div class="stat-grid">
+                        <div class="stat-card highlight-stat">
+                            <div class="stat-value">{{ total_emission | default('0') }}</div>
+                            <div class="stat-label">kg CO₂</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ comparison | default('0%') }}</div>
+                            <div class="stat-label">vs last week</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Highlights Tile -->
+            <div class="tile" style="--order: 2;">
+                <div class="tile-header">
+                    <div class="tile-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h2 class="tile-title">Performance Highlights</h2>
+                </div>
+                <div class="tile-content">
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ best_day | default('N/A') }}</div>
+                            <div class="stat-label">Best Day</div>
+                            <div class="stat-label">{{ best_day_emission | default(0) }} kg</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ worst_day | default('N/A') }}</div>
+                            <div class="stat-label">Worst Day</div>
+                            <div class="stat-label">{{ worst_day_emission | default(0) }} kg</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="margin-top: 15px;">
+                        <div class="stat-value">{{ streak | default(0) }} weeks</div>
+                        <div class="stat-label">Reduction Streak</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Weekly Comparison Tile -->
+            <div class="tile" style="--order: 3;">
+                <div class="tile-header">
+                    <div class="tile-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h2 class="tile-title">Weekly Comparison</h2>
+                </div>
+                <div class="tile-content">
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ total_emission | default('0') }}</div>
+                            <div class="stat-label">This Week</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ last_week_emission | default('0') }}</div>
+                            <div class="stat-label">Last Week</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="margin-top: 15px; background-color: rgba(0,168,107,0.05);">
+                        <div class="stat-value">{{ comparison | default('0%') }}</div>
+                        <div class="stat-label">Change</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tips Tile -->
+            <div class="tile" style="--order: 4;">
+                <div class="tile-header">
+                    <div class="tile-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h2 class="tile-title">Reduction Tips</h2>
+                </div>
+                <div class="tile-content">
+                    <ul class="tips-list">
+                        <li>
+                            <div class="tip-icon">
+                                <i class="fas fa-bus"></i>
+                            </div>
+                            Use public transport or carpool
+                        </li>
+                        <li>
+                            <div class="tip-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            Optimize home energy use
+                        </li>
+                        <li>
+                            <div class="tip-icon">
+                                <i class="fas fa-leaf"></i>
+                            </div>
+                            Try plant-based meals
+                        </li>
+                        <li>
+                            <div class="tip-icon">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            Reduce unnecessary purchases
+                        </li>
+                        <li>
+                            <div class="tip-icon">
+                                <i class="fas fa-recycle"></i>
+                            </div>
+                            Improve recycling habits
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Environmental Impact Tile -->
+            <div class="tile" style="--order: 5;">
+                <div class="tile-header">
+                    <div class="tile-icon">
+                        <i class="fas fa-globe-europe"></i>
+                    </div>
+                    <h2 class="tile-title">Your Impact</h2>
+                </div>
+                <div class="tile-content">
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 3rem; color: var(--primary);">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <p>Your emissions this week are equivalent to planting <strong>{{ trees_needed | default('5') }} trees</strong> to offset your carbon footprint.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="share-section">
+            <h3 class="share-title">Share Your Progress</h3>
+            <div class="share-buttons">
+                <button class="share-btn download-btn" onclick="captureAndDownload()">
+                    <i class="fas fa-download"></i> Download Report
+                </button>
+                <button class="share-btn facebook-btn" onclick="captureAndShare()">
+                    <i class="fab fa-facebook-f"></i> Facebook
+                </button>
+                <button class="share-btn twitter-btn" onclick="captureAndShareOnTwitter()">
+                    <i class="fab fa-twitter"></i> Twitter
+                </button>
+                <button class="share-btn other-btn" onclick="captureAndShareOnOtherApps()">
+                    <i class="fas fa-share-alt"></i> Other Apps
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Function to capture and download the report as an image
+        function captureAndDownload() {
+            const element = document.getElementById("report-section");
+            const originalTransform = element.style.transform;
+            
+            element.style.transform = "scale(0.98)";
+            
+            html2canvas(element, {
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            }).then(canvas => {
+                let link = document.createElement("a");
+                link.href = canvas.toDataURL("image/png");
+                link.download = "carbon_report_" + new Date().toISOString().slice(0,10) + ".png";
+                link.click();
+                element.style.transform = originalTransform;
+                
+                // Show confirmation
+                const confirmation = document.createElement("div");
+                confirmation.textContent = "Report downloaded!";
+                confirmation.style.position = "fixed";
+                confirmation.style.bottom = "20px";
+                confirmation.style.left = "50%";
+                confirmation.style.transform = "translateX(-50%)";
+                confirmation.style.backgroundColor = "var(--primary)";
+                confirmation.style.color = "white";
+                confirmation.style.padding = "10px 20px";
+                confirmation.style.borderRadius = "20px";
+                confirmation.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                confirmation.style.zIndex = "1000";
+                confirmation.style.animation = "fadeIn 0.3s ease-out";
+                document.body.appendChild(confirmation);
+                
+                setTimeout(() => {
+                    confirmation.style.animation = "fadeOut 0.3s ease-out forwards";
+                    setTimeout(() => confirmation.remove(), 300);
+                }, 2000);
+            });
+        }
+
+        // Function to upload the image to ImgBB
+        function uploadImageToImgBB(base64Image) {
+            const apiKey = "44e6d83b34b99bb45931d902e975f027";
+            const url = "https://api.imgbb.com/1/upload";
+
+            const formData = new FormData();
+            formData.append("key", apiKey);
+            formData.append("image", base64Image.split(",")[1]);
+
+            return fetch(url, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    return data.data.url;
+                } else {
+                    throw new Error(data.error.message || "Failed to upload image");
+                }
+            });
+        }
+        
+        function shareOnTwitter(imageUrl) {
+            const text = "Check out my carbon footprint progress this week! 🌱 I reduced my emissions to {{ total_emission }} kg CO₂. #Sustainability #EcoFriendly";
+            const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(imageUrl)}`;
+            window.open(twitterShareUrl, "_blank");
+        }
+        
+        function captureAndShareOnTwitter() {
+            const element = document.getElementById("report-section");
+            element.style.opacity = "0.9";
+
+            html2canvas(element, {
+                scale: 2,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                const base64Image = canvas.toDataURL("image/png");
+                element.style.opacity = "1";
+
+                uploadImageToImgBB(base64Image)
+                    .then(imageUrl => {
+                        shareOnTwitter(imageUrl);
+                    })
+                    .catch(error => {
+                        console.error("Error uploading image:", error);
+                        alert("Failed to upload image for sharing.");
+                    });
+            });
+        }
+
+        function captureAndShareOnOtherApps() {
+            const element = document.getElementById("report-section");
+            element.style.opacity = "0.9";
+
+            html2canvas(element, {
+                scale: 2,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                element.style.opacity = "1";
+                canvas.toBlob(blob => {
+                    const file = new File([blob], "carbon_report.png", { type: "image/png" });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: "My Weekly Carbon Footprint Report",
+                            text: "Check out my carbon footprint progress! 🌱 I reduced my emissions to {{ total_emission }} kg CO₂ this week.",
+                        })
+                        .catch(error => console.error("Error sharing:", error));
+                    } else {
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        link.download = "carbon_report.png";
+                        link.click();
+                        alert("Your browser doesn't support direct sharing. The report has been downloaded instead.");
+                    }
+                }, "image/png");
+            });
+        }
+
+        function shareOnFacebook(imageUrl) {
+            const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(imageUrl)}`;
+            window.open(facebookShareUrl, "_blank");
+        }
+
+        function captureAndShare() {
+            const element = document.getElementById("report-section");
+            element.style.opacity = "0.9";
+
+            html2canvas(element, {
+                scale: 2,
+                logging: false,
+                useCORS: true
+            }).then(canvas => {
+                const base64Image = canvas.toDataURL("image/png");
+                element.style.opacity = "1";
+
+                uploadImageToImgBB(base64Image)
+                    .then(imageUrl => {
+                        shareOnFacebook(imageUrl);
+                    })
+                    .catch(error => {
+                        console.error("Error uploading image:", error);
+                        alert("Failed to upload image for sharing.");
+                    });
+            });
+        }
+
+        // Add fadeOut animation for the download confirmation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeOut {
+                to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

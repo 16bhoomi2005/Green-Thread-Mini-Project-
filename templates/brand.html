@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Friendly Brands Showcase | GreenThread</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a3e2f;
+            --primary-light: #2c5e4a;
+            --accent: #ffdd57;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            color: var(--light);
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1465146633011-14f8e0781093?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80') center/cover no-repeat;
+            opacity: 0.1;
+            z-index: -1;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 5rem 2rem 3rem;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .scroll-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            margin-bottom: 5rem;
+        }
+        
+        .scroll-container {
+            display: flex;
+            align-items: center;
+            height: 100vh;
+            width: max-content;
+            padding-left: 50vw;
+            padding-right: 50vw;
+            gap: 3rem;
+        }
+        
+        .brand-card {
+            flex: 0 0 25vw;
+            height: 70vh;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem;
+            transform: scale(0.95);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0.8;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .brand-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 62, 47, 0.3), rgba(44, 94, 74, 0.3));
+            z-index: -1;
+        }
+        
+        .brand-card.active {
+            opacity: 1;
+            transform: scale(1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--accent);
+        }
+        
+        .brand-logo {
+            width: 80%;
+            height: auto;
+            max-height: 120px;
+            object-fit: contain;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+        
+        .brand-card:hover .brand-logo {
+            transform: scale(1.05);
+            filter: drop-shadow(0 8px 15px rgba(0,0,0,0.3));
+        }
+        
+        .brand-info {
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .brand-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 1rem 0;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .brand-name::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+        
+        .brand-card:hover .brand-name::after {
+            width: 80px;
+        }
+        
+        .brand-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .brand-stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin: 1.5rem 0;
+            background: rgba(0,0,0,0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+        
+        .brand-card:hover .brand-stats {
+            transform: translateY(-5px);
+        }
+        
+        .stat-item {
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .brand-card:hover .stat-item {
+            transform: scale(1.05);
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .brand-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem 2rem;
+            background: var(--accent);
+            color: var(--primary);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(255, 221, 87, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .brand-link::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .brand-link:hover {
+            background: #ffd700;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 221, 87, 0.4);
+        }
+        
+        .brand-link:hover::before {
+            left: 100%;
+        }
+        
+        .scroll-indicator {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        
+        .scroll-indicator:hover {
+            opacity: 1;
+        }
+        
+        .scroll-text {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+        }
+        
+        .scroll-arrow {
+            width: 30px;
+            height: 30px;
+            border-right: 2px solid var(--accent);
+            border-bottom: 2px solid var(--accent);
+            transform: rotate(45deg);
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: rotate(45deg) translateY(0); }
+            40% { transform: rotate(45deg) translateY(-10px); }
+            60% { transform: rotate(45deg) translateY(-5px); }
+        }
+        
+        .eco-badge {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: var(--accent);
+            color: var(--primary);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 2;
+            transition: transform 0.3s ease;
+        }
+        
+        .brand-card:hover .eco-badge {
+            transform: rotate(15deg) scale(1.1);
+        }
+        
+        .impact-meter {
+            width: 100%;
+            height: 8px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .impact-level {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ffc107);
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        
+        .home-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: var(--primary);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 2rem auto;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(255, 221, 87, 0.3);
+        }
+        
+        .home-button:hover {
+            background: #ffd700;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 221, 87, 0.4);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0,0,0,0.1);
+            margin-top: 3rem;
+        }
+        
+        .footer p {
+            margin: 0.5rem 0;
+            opacity: 0.8;
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .social-links a {
+            color: var(--light);
+            font-size: 1.5rem;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            color: var(--accent);
+            transform: translateY(-3px);
+        }
+        
+        @media (max-width: 1024px) {
+            .brand-card {
+                flex: 0 0 35vw;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .brand-card {
+                flex: 0 0 60vw;
+                height: 65vh;
+                padding: 1.5rem;
+            }
+            
+            .brand-name {
+                font-size: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .brand-card {
+                flex: 0 0 80vw;
+                height: 60vh;
+            }
+            
+            .scroll-indicator {
+                display: none;
+            }
+            
+            .brand-name {
+                font-size: 1.3rem;
+            }
+            
+            .brand-description {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-leaf"></i> Sustainable Brands <i class="fas fa-recycle"></i></h1>
+        <p>Discover eco-conscious brands that align with our commitment to environmental responsibility and ethical practices</p>
+    </div>
+    
+    <div class="scroll-wrapper">
+        <div class="scroll-container">
+            <!-- Brand 1 -->
+            <div class="brand-card">
+                <div class="eco-badge">🌿</div>
+                <img src="https://www.eileenfisher.com/wp-content/uploads/2020/03/EF-Logo-Green.png" alt="Eileen Fisher" class="brand-logo">
+                <div class="brand-info">
+                    <h3 class="brand-name">Eileen Fisher</h3>
+                    <p class="brand-description">Pioneering sustainable fashion with timeless designs and circular business models since 1984.</p>
+                    <div class="brand-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Organic Cotton</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">73%</div>
+                            <div class="stat-label">Recycled</div>
+                        </div>
+                    </div>
+                    <div class="impact-meter">
+                        <div class="impact-level" style="width: 95%"></div>
+                    </div>
+                </div>
+                <a href="https://www.eileenfisher.com/" class="brand-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Visit
+                </a>
+            </div>
+
+            <!-- Brand 2 -->
+            <div class="brand-card">
+                <div class="eco-badge">🏔️</div>
+                <img src="https://www.patagonia.com/on/demandware.static/-/Library-Sites-PatagoniaShared/default/dw4c7b8f5b/images/logo.svg" alt="Patagonia" class="brand-logo">
+                <div class="brand-info">
+                    <h3 class="brand-name">Patagonia</h3>
+                    <p class="brand-description">Activist company creating premium outdoor gear while fighting for environmental causes.</p>
+                    <div class="brand-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">1%</div>
+                            <div class="stat-label">For the Planet</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">87%</div>
+                            <div class="stat-label">Recycled Materials</div>
+                        </div>
+                    </div>
+                    <div class="impact-meter">
+                        <div class="impact-level" style="width: 98%"></div>
+                    </div>
+                </div>
+                <a href="https://www.patagonia.com/" class="brand-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Visit
+                </a>
+            </div>
+
+            <!-- Brand 3 -->
+            <div class="brand-card">
+                <div class="eco-badge">♻️</div>
+                <img src="https://wearpact.com/cdn/shop/files/pact-logo_200x.png" alt="Pact" class="brand-logo">
+                <div class="brand-info">
+                    <h3 class="brand-name">Pact</h3>
+                    <p class="brand-description">Affordable organic basics made with fair trade certified factories and sustainable materials.</p>
+                    <div class="brand-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Organic</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">Fair</div>
+                            <div class="stat-label">Trade Certified</div>
+                        </div>
+                    </div>
+                    <div class="impact-meter">
+                        <div class="impact-level" style="width: 90%"></div>
+                    </div>
+                </div>
+                <a href="https://wearpact.com/" class="brand-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Visit
+                </a>
+            </div>
+            
+            <!-- Brand 4 -->
+            <div class="brand-card">
+                <div class="eco-badge">🌎</div>
+                <img src="https://www.tentree.com/cdn/shop/files/tentree-logo-green_200x.png" alt="tentree" class="brand-logo">
+                <div class="brand-info">
+                    <h3 class="brand-name">tentree</h3>
+                    <p class="brand-description">For every item purchased, tentree plants 10 trees in communities around the world.</p>
+                    <div class="brand-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">10</div>
+                            <div class="stat-label">Trees Planted</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">100M+</div>
+                            <div class="stat-label">Trees to Date</div>
+                        </div>
+                    </div>
+                    <div class="impact-meter">
+                        <div class="impact-level" style="width: 97%"></div>
+                    </div>
+                </div>
+                <a href="https://www.tentree.com/" class="brand-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Visit
+                </a>
+            </div>
+            
+            <!-- Brand 5 -->
+            <div class="brand-card">
+                <div class="eco-badge">🌱</div>
+                <img src="https://www.allbirds.com/cdn/shop/files/Allbirds_Logo_White_2048x.png" alt="Allbirds" class="brand-logo">
+                <div class="brand-info">
+                    <h3 class="brand-name">Allbirds</h3>
+                    <p class="brand-description">Comfortable shoes made from natural materials with a focus on reducing carbon footprint.</p>
+                    <div class="brand-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">-50%</div>
+                            <div class="stat-label">Carbon Footprint</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Natural Materials</div>
+                        </div>
+                    </div>
+                    <div class="impact-meter">
+                        <div class="impact-level" style="width: 92%"></div>
+                    </div>
+                </div>
+                <a href="https://www.allbirds.com/" class="brand-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Visit
+                </a>
+            </div>
+            
+            <!-- Brand 6 -->
+            <div class="brand-card">
+                <div class="eco-badge">🌊</div>
+                <img src="https://www.reformation.com/images/ref-logo.svg" alt="Reformation" class="brand-logo">
+                <div class="brand-info">
+                    <h3 class="brand-name">Reformation</h3>
+                    <p class="brand-description">Sustainable fashion brand combining stylish designs with eco-friendly practices.</p>
+                    <div class="brand-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">65%</div>
+                            <div class="stat-label">Recycled Fabrics</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Carbon Neutral</div>
+                        </div>
+                    </div>
+                    <div class="impact-meter">
+                        <div class="impact-level" style="width: 88%"></div>
+                    </div>
+                </div>
+                <a href="https://www.reformation.com/" class="brand-link" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Visit
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scroll-indicator">
+        <div class="scroll-text">Scroll Horizontally</div>
+        <div class="scroll-arrow"></div>
+    </div>
+    
+    <a href="/" class="home-button"><i class="fas fa-home"></i> Back to Home</a>
+    
+    <div class="footer">
+        <div class="social-links">
+            <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="#" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
+        </div>
+        <p>Join our community for more sustainable living tips</p>
+        <p>&copy; 2023 GreenThread. All rights reserved.</p>
+    </div>
+    
+    <script>
+        // GSAP Horizontal Scroll Effect
+        gsap.registerPlugin(ScrollTrigger);
+        
+        const scrollContainer = document.querySelector('.scroll-container');
+        const brandCards = document.querySelectorAll('.brand-card');
+        
+        // Set up the horizontal scroll animation
+        gsap.to(scrollContainer, {
+            x: () => -(scrollContainer.scrollWidth - document.documentElement.clientWidth) + 'px',
+            ease: 'none',
+            scrollTrigger: {
+                trigger: '.scroll-wrapper',
+                start: 'top top',
+                end: () => '+=' + scrollContainer.scrollWidth,
+                scrub: 1,
+                pin: true,
+                anticipatePin: 1,
+                invalidateOnRefresh: true,
+            },
+        });
+        
+        // Add active class to centered card
+        ScrollTrigger.create({
+            trigger: ".scroll-wrapper",
+            start: "top top",
+            end: () => "+=" + scrollContainer.scrollWidth,
+            onUpdate: (self) => {
+                const progress = self.progress;
+                const cardCount = brandCards.length;
+                const activeIndex = Math.round(progress * (cardCount - 1));
+                
+                brandCards.forEach((card, index) => {
+                    if (index === activeIndex) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
+            }
+        });
+        
+        // Parallax effect for brand logos
+        brandCards.forEach(card => {
+            const logo = card.querySelector('.brand-logo');
+            
+            card.addEventListener('mousemove', (e) => {
+                const xAxis = (card.offsetWidth / 2 - e.offsetX) / 25;
+                const yAxis = (card.offsetHeight / 2 - e.offsetY) / 25;
+                logo.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg) scale(1.05)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                logo.style.transform = 'rotateY(0) rotateX(0) scale(1)';
+            });
+        });
+        
+        // Hide scroll indicator after scrolling starts
+        const scrollIndicator = document.querySelector('.scroll-indicator');
+        
+        ScrollTrigger.create({
+            trigger: ".scroll-wrapper",
+            start: "top top",
+            end: "+=100",
+            onEnter: () => {
+                gsap.to(scrollIndicator, {
+                    opacity: 0,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            },
+            onLeaveBack: () => {
+                gsap.to(scrollIndicator, {
+                    opacity: 0.7,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            }
+        });
+        
+        // Animate impact meters on scroll into view
+        const impactMeters = document.querySelectorAll('.impact-level');
+        
+        impactMeters.forEach(meter => {
+            gsap.from(meter, {
+                width: "0%",
+                scrollTrigger: {
+                    trigger: meter.parentElement,
+                    start: "top 80%",
+                    toggleActions: "play none none none"
+                },
+                duration: 1.5,
+                ease: "power3.out"
+            });
+        });
+        
+        // Add ripple effect to brand links
+        const brandLinks = document.querySelectorAll('.brand-link');
+        
+        brandLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const x = e.clientX - e.target.getBoundingClientRect().left;
+                const y = e.clientY - e.target.getBoundingClientRect().top;
+                
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                    window.open(this.href, '_blank');
+                }, 1000);
+            });
+        });
+    </script>
+</body>
+</html>

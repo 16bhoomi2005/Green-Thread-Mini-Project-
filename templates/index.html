@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                        url('https://imagedelivery.net/1KomXrSWiTojGGip43n0SQ/6e27a7dd-dc16-4ae2-650e-e2848d373200/large');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .form-container {
+            width: 400px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(15px);
+            text-align: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            outline: none;
+            transition: background 0.3s ease-in-out;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input:focus {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #ff6f61;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #ff3b2f;
+            transform: scale(1.05);
+        }
+
+        .alert {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .toggle-link {
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .toggle-link:hover {
+            color: #ff6f61;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div id="login-form">
+            <h2>Login</h2>
+            <input type="text" style="display:none;" aria-hidden="true">
+            <input type="password" style="display:none;" aria-hidden="true">
+            <div class="form-group">
+                <input type="text" id="login_username" name="login_username" placeholder="Username" required autocomplete="new-username">
+            </div>
+            <div class="form-group">
+                <input type="password" id="login_password" name="login_password" placeholder="Password" required autocomplete="new-password">
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="login-alert" class="alert"></div>
+            <p>Don't have an account? <span class="toggle-link" onclick="toggleForms()">Register here</span></p>
+        </div>
+
+        <div id="register-form" style="display: none;">
+            <h2>Register</h2>
+            <div class="form-group">
+                <input type="text" id="reg_username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="email" id="reg_email" placeholder="Email" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="reg_password" placeholder="Password" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="reg_confirm_password" placeholder="Confirm Password" required>
+            </div>
+            <button onclick="register()">Register</button>
+            <div id="register-alert" class="alert"></div>
+            <p>Already have an account? <span class="toggle-link" onclick="toggleForms()">Login here</span></p>
+        </div>
+    </div>
+
+    <script>
+        function clearFields() {
+            document.querySelectorAll("input").forEach(input => input.value = "");
+            document.getElementById("register-alert").textContent = "";
+            document.getElementById("login-alert").textContent = "";
+        }
+
+        function toggleForms() {
+            const registerForm = document.getElementById("register-form");
+            const loginForm = document.getElementById("login-form");
+            clearFields();
+            registerForm.style.display = registerForm.style.display === "none" ? "block" : "none";
+            loginForm.style.display = loginForm.style.display === "none" ? "block" : "none";
+        }
+
+        async function register() {
+            const username = document.getElementById("reg_username").value;
+            const email = document.getElementById("reg_email").value;
+            const password = document.getElementById("reg_password").value;
+            const confirmPassword = document.getElementById("reg_confirm_password").value;
+            const alertDiv = document.getElementById("register-alert");
+
+            if (!username || !email || !password || !confirmPassword) {
+                alertDiv.textContent = "All fields are required!";
+                alertDiv.style.color = "#ff6f61";
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alertDiv.textContent = "Passwords do not match!";
+                alertDiv.style.color = "#ff6f61";
+                return;
+            }
+
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, email, password, confirm_password: confirmPassword })
+            });
+
+            const result = await response.json();
+            alertDiv.textContent = result.message;
+            alertDiv.style.color = response.ok ? "#4CAF50" : "#ff6f61";
+
+            if (response.ok) {
+                setTimeout(toggleForms, 1000);
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById("login_username").value;
+            const password = document.getElementById("login_password").value;
+            const alertDiv = document.getElementById("login-alert");
+
+            if (!username || !password) {
+                alertDiv.textContent = "Username and password are required!";
+                alertDiv.style.color = "#ff6f61";
+                return;
+            }
+
+            try {
+                const response = await fetch("/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alertDiv.textContent = data.message;
+                    alertDiv.style.color = "#4CAF50";
+                    setTimeout(() => {
+                        window.location.href = "/startup";
+                    }, 1000);
+                } else {
+                    alertDiv.textContent = data.message;
+                    alertDiv.style.color = "#ff6f61";
+                }
+            } catch (error) {
+                alertDiv.textContent = "An error occurred. Please try again.";
+                alertDiv.style.color = "#ff6f61";
+            }
+        }
+
+        window.onload = function() {
+            clearFields();
+        };
+    </script>
+</body>
+</html>

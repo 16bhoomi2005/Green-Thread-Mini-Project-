@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Full-screen background image */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-image: url("C:/Users/XIE.PC-08/Desktop/GreenThread/9524b0b88d8f598f5ee762368bba9812.jpg"); /* Ensure the correct path */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+
+        /* Glassmorphism effect for the form container */
+        .form-container {
+            background: rgba(255, 255, 255, 0.15); /* Light transparency */
+            backdrop-filter: blur(15px); /* Frosted glass effect */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 350px;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Hover effect on the form container */
+        .form-container:hover {
+            transform: scale(1.03);
+        }
+
+        /* Headings */
+        h2 {
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Form input fields */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.2); /* Transparent input */
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            font-size: 16px;
+            color: white;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Placeholder color */
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Input focus effect */
+        input:focus {
+            border-color: #27ae60;
+            outline: none;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Button styling */
+        button {
+            width: 100%;
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Button hover effect */
+        button:hover {
+            background: #219150;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Alert messages */
+        .alert {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+
+        /* Toggle between login and register */
+        .toggle-link {
+            color: #27ae60;
+            cursor: pointer;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .toggle-link:hover {
+            color: #1e8449;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container">
+        <div id="register-form">
+            <h2>Register</h2>
+            <div class="form-group">
+                <input type="text" id="reg_username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="email" id="reg_email" placeholder="Email" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="reg_password" placeholder="Password" required>
+            </div>
+            <button onclick="register()">Register</button>
+            <div id="register-alert" class="alert"></div>
+            <p>Already have an account? <span class="toggle-link" onclick="toggleForms()">Login here</span></p>
+        </div>
+
+        <div id="login-form" style="display: none;">
+            <h2>Login</h2>
+            <div class="form-group">
+                <input type="text" id="login_username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="login_password" placeholder="Password" required>
+            </div>
+            <button onclick="login()">Login</button>
+            <div id="login-alert" class="alert"></div>
+            <p>Don't have an account? <span class="toggle-link" onclick="toggleForms()">Register here</span></p>
+        </div>
+    </div>
+
+    <script>
+        /* Toggle between login and register forms */
+        function toggleForms() {
+            const registerForm = document.getElementById("register-form");
+            const loginForm = document.getElementById("login-form");
+            registerForm.style.display = (registerForm.style.display === "none") ? "block" : "none";
+            loginForm.style.display = (loginForm.style.display === "none") ? "block" : "none";
+        }
+
+        /* Register function */
+        function register() {
+            const username = document.getElementById("reg_username").value;
+            const email = document.getElementById("reg_email").value;
+            const password = document.getElementById("reg_password").value;
+            const alertDiv = document.getElementById("register-alert");
+
+            if (!username || !email || !password) {
+                alertDiv.textContent = "All fields are required!";
+                alertDiv.style.color = "red";
+                return;
+            }
+
+            alertDiv.textContent = "Registered successfully!";
+            alertDiv.style.color = "green";
+        }
+
+        /* Login function */
+        function login() {
+            const username = document.getElementById("login_username").value;
+            const password = document.getElementById("login_password").value;
+            const alertDiv = document.getElementById("login-alert");
+
+            if (!username || !password) {
+                alertDiv.textContent = "Username and password are required!";
+                alertDiv.style.color = "red";
+                return;
+            }
+
+            alertDiv.textContent = "Logged in successfully!";
+            alertDiv.style.color = "green";
+        }
+    </script>
+
+</body>
+</html>

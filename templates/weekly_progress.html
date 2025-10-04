@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Carbon Footprint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            margin: auto;
+        }
+        .graph {
+            width: 100%;
+            margin-top: 10px;
+        }
+        .summary {
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .badges {
+            margin-top: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .share-btn {
+            background-color: #1877F2;
+            color: white;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            display: block;
+            margin: 15px auto;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Your Weekly Carbon Footprint 🌱</h2>
+        <img class="graph" src="{{ graph_url }}" alt="Weekly Graph">
+        
+        <p class="summary">This week, you emitted <strong>{{ total_emission }} kg CO₂</strong>. <br>
+            Last week: <strong>{{ last_week_emission }} kg</strong> ({{ comparison }})</p>
+        
+        <p><strong>Lowest Day:</strong> {{ best_day }} ({{ best_day_emission }} kg CO₂) <br>
+           <strong>Highest Day:</strong> {{ worst_day }} ({{ worst_day_emission }} kg CO₂)</p>
+        
+        <div class="badges">
+            {% if reduced_emission %}<span class="badge">Eco Hero 🌍</span>{% endif %}
+            {% if streak %}<span class="badge">Streak {{ streak }} 🔥</span>{% endif %}
+        </div>
+        
+        <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u={{ graph_url }}" target="_blank">
+            📤 Share on Facebook
+        </a>
+    </div>
+</body>
+</html>

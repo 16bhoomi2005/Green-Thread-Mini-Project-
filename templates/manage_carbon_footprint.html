@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manage Carbon Footprint</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary: #00a86b;
+      --primary-light: #e8f5e9;
+      --primary-dark: #007a4d;
+      --danger: #ff6b6b;
+      --danger-dark: #d32f2f;
+      --light-bg: #f8f9fa;
+      --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+      --transition: all 0.2s ease;
+    }
+
+    body {
+      background-color: var(--light-bg);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #2d3436;
+    }
+
+    h1 {
+      color: var(--primary-dark);
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .table-wrapper {
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .table {
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .table thead {
+      background-color: var(--primary);
+      color: #fff;
+      position: sticky;
+      top: 0;
+    }
+
+    .table th {
+      font-weight: 600;
+      padding: 1rem;
+      border: none;
+    }
+
+    .table td {
+      padding: 0.75rem 1rem;
+      vertical-align: middle;
+      border-top: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .table tbody tr:hover {
+      background-color: var(--primary-light);
+      transition: var(--transition);
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      border-color: var(--danger);
+      transition: var(--transition);
+    }
+
+    .btn-danger:hover {
+      background-color: var(--danger-dark);
+      border-color: var(--danger-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      transition: var(--transition);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+      border-color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+
+    .form-control-sm {
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.1);
+      transition: var(--transition);
+      padding: 0.35rem 0.75rem;
+    }
+
+    .form-control-sm:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 0.2rem rgba(0, 168, 107, 0.15);
+    }
+
+    .record-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 180px;
+    }
+
+    .form-control::placeholder {
+      color: #bbb;
+      opacity: 1;
+    }
+
+    .form-inline-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footprint-value {
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    @media (min-width: 768px) {
+      .record-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      
+      .form-inline-group {
+        min-width: 200px;
+      }
+    }
+
+    /* Animation for actions */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    tbody tr {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    /* Material icons */
+    .material-icon {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+      color: var(--primary-dark);
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <h1 class="text-center mb-4">
+      <i class="bi bi-tree-fill me-2"></i>
+      Manage Carbon Footprint Records
+    </h1>
+    <div class="table-wrapper">
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Material</th>
+              <th>Washing</th>
+              <th>Drying</th>
+              <th>Ironing</th>
+              <th>Weight</th>
+              <th>Footprint</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in records %}
+            <tr>
+              <td>{{ record['id'] }}</td>
+              <td>
+                <i class="bi bi-person-circle me-1"></i>
+                {{ record['username'] }}
+              </td>
+              <td>
+                {{ record['material'] }}
+            </td>
+              <td>{{ record['washing_frequency'] }}</td>
+              <td>{{ record['drying_method'] }}</td>
+              <td>{{ record['ironing_frequency'] }}</td>
+              <td>{{ record['weight'] }} kg</td>
+              <td class="footprint-value">{{ record['footprint'] }} kg CO₂</td>
+              <td>
+                <div class="record-actions">
+                  <form action="/admin/carbon-footprint/delete/{{ record['id'] }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                      <i class="bi bi-trash-fill"></i> Delete
+                    </button>
+                  </form>
+                  <form action="/admin/carbon-footprint/update/{{ record['id'] }}" method="POST" class="form-inline-group">
+                    <input type="text" name="material" value="{{ record['material'] }}" class="form-control form-control-sm" placeholder="Material" required>
+                    <input type="text" name="washing_frequency" value="{{ record['washing_frequency'] }}" class="form-control form-control-sm" placeholder="Washing Frequency" required>
+                    <input type="text" name="drying_method" value="{{ record['drying_method'] }}" class="form-control form-control-sm" placeholder="Drying Method" required>
+                    <input type="text" name="ironing_frequency" value="{{ record['ironing_frequency'] }}" class="form-control form-control-sm" placeholder="Ironing Frequency" required>
+                    <input type="number" name="weight" value="{{ record['weight'] }}" step="0.01" class="form-control form-control-sm" placeholder="Weight" required>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                      <i class="bi bi-save-fill"></i> Update
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Add confirmation for delete actions
+    document.querySelectorAll('.btn-danger').forEach(button => {
+      button.addEventListener('click', function(e) {
+        if (!confirm('Are you sure you want to delete this record?')) {
+          e.preventDefault();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

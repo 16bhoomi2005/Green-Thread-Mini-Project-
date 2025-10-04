@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Thread - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Didot&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('/static/images/bg.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        .header-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .logo {
+            font-family: 'Didot', serif;
+            font-size: 3rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease-in-out;
+        }
+        .logo:hover {
+            transform: scale(1.1);
+        }
+        .btn {
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.3);
+            color: #fff;
+            border-radius: 8px;
+            transition: all 0.3s ease-in-out;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .navigation {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #2c3e50;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-in-out;
+            min-width: 200px;
+        }
+        .dropdown-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            text-decoration: none;
+            color: #fff;
+            background: #2c3e50;
+            transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+        }
+        .dropdown-menu a:hover {
+            background: #00bcd4;
+            color: #fff;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-top: 80px;
+        }
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            animation: fadeInScale 1.5s ease-in-out;
+        }
+        .quote {
+            font-size: 1.5rem;
+            font-style: italic;
+            margin-top: 20px;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            min-height: 80px;
+        }
+        .quote-author {
+            font-size: 1.2rem;
+            margin-top: 10px;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <div class="logo">GreenThread</div>
+        <div class="navigation">
+            <a href="about" class="btn">About Us</a>
+            <div class="dropdown">
+                <button class="btn" id="loginBtn">Login</button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <a href="index"><i class="fas fa-user"></i> User Login</a>
+                    <a href="admin_login"><i class="fas fa-user-shield"></i> Admin Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h2>Welcome to GreenThread</h2>
+        <div class="quote" id="quote">
+            "The greatest threat to our planet is the belief that someone else will save it."
+        </div>
+        <div class="quote-author" id="author">- Robert Swan</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginBtn = document.getElementById('loginBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+
+            // Show the first quote immediately
+            setTimeout(() => {
+                document.getElementById('quote').style.opacity = 1;
+                document.getElementById('author').style.opacity = 1;
+            }, 100);
+
+            // Toggle dropdown menu visibility on button click
+            loginBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.dropdown')) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+
+            const quotes = [
+                {
+                    text: "The greatest threat to our planet is the belief that someone else will save it.",
+                    author: "- Robert Swan",
+                },
+                {
+                    text: "We do not inherit the earth from our ancestors, we borrow it from our children.",
+                    author: "- Native American Proverb",
+                },
+                {
+                    text: "The Earth is what we all have in common.",
+                    author: "- Wendell Berry",
+                },
+                {
+                    text: "He that plants trees loves others besides himself.",
+                    author: "- Thomas Fuller",
+                },
+                {
+                    text: "What we do today, right now, will have an accumulated effect on all of our tomorrows.",
+                    author: "- Alexandra Stoddard",
+                },
+            ];
+
+            let currentQuoteIndex = 1; // Start with next quote since first is already shown
+
+            function changeQuote() {
+                const quoteElement = document.getElementById("quote");
+                const authorElement = document.getElementById("author");
+
+                // Fade out
+                quoteElement.style.opacity = 0;
+                authorElement.style.opacity = 0;
+
+                setTimeout(() => {
+                    // Update the quote and author text
+                    quoteElement.textContent = quotes[currentQuoteIndex].text;
+                    authorElement.textContent = quotes[currentQuoteIndex].author;
+
+                    // Fade in
+                    setTimeout(() => {
+                        quoteElement.style.opacity = 1;
+                        authorElement.style.opacity = 1;
+                    }, 50);
+
+                    // Move to the next quote
+                    currentQuoteIndex = (currentQuoteIndex + 1) % quotes.length;
+                }, 1000); // Wait for fade-out to complete
+            }
+
+            // Change the quote every 5 seconds
+            setInterval(changeQuote, 5000);
+        });
+    </script>
+</body>
+</html>
