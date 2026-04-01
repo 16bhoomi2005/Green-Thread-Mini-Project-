@@ -6,15 +6,19 @@
     <title>Carbon Footprint Calculator | GreenThread</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
-            --primary: #1a3e2f;
-            --primary-light: #2c5e4a;
-            --accent: #ffdd57;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --success: #28a745;
-            --error: #dc3545;
+            --primary: #0f172a;           /* Deep Midnight Navy */
+            --primary-light: #1e293b;     /* Slate Blue */
+            --accent: #10b981;            /* Vibrant Emerald */
+            --accent-gold: #fbbf24;       /* Success Gold */
+            --light: #f8fafc;
+            --dark: #020617;
+            --success: #10b981;
+            --error: #ef4444;             /* Modern Red */
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
         
         * {
@@ -29,25 +33,23 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: linear-gradient(rgba(26, 62, 47, 0.85), rgba(44, 94, 74, 0.85)), 
-                        url('https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+            background: radial-gradient(circle at top left, #1e293b, #0f172a);
             background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             color: var(--light);
             padding: 20px;
         }
         
         .calculator-container {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 500px;
-            animation: fadeIn 0.6s ease-out;
+            max-width: 550px;
+            border: 1px solid var(--glass-border);
+            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         @keyframes fadeIn {
@@ -114,26 +116,27 @@
         
         .calculate-btn {
             width: 100%;
-            padding: 1rem;
-            background: var(--accent);
-            color: var(--dark);
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--accent), #059669);
+            color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.3);
         }
         
         .calculate-btn:hover {
-            background: #ffd700;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 221, 87, 0.3);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.5);
+            filter: brightness(1.1);
         }
         
         .calculate-btn:active {
@@ -142,24 +145,147 @@
         
         .result-container {
             margin-top: 1.5rem;
-            padding: 1.25rem;
-            border-radius: 8px;
-            background: rgba(0,0,0,0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             text-align: center;
             display: none;
+            animation: fadeIn 0.4s ease-out;
         }
         
         .result-value {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--accent);
-            margin-top: 0.5rem;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--accent), var(--accent-gold));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0.75rem 0;
+            letter-spacing: -1px;
         }
+
+        .eco-score-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+            margin-top: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .magic-fill-container {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px dashed var(--accent);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .magic-fill-container h4 {
+            margin-top: 0;
+            color: var(--accent);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .url-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            font-size: 0.85rem;
+        }
+
+        .magic-btn {
+            background: var(--accent);
+            color: var(--dark);
+            border: none;
+            padding: 0 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .magic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .magic-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        
+        .suggestion-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #e0e0e0;
+            border-left: 4px solid var(--accent);
+            text-align: left;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .metric-card p { margin: 5px 0 0; font-size: 0.85rem; opacity: 0.9; }
+        .metric-card h4 { margin: 0; color: var(--accent); font-size: 1.1rem; }
         
         .footer-links {
             margin-top: 2rem;
             text-align: center;
             font-size: 0.9rem;
+        }
+
+        .share-btn {
+            background: linear-gradient(135deg, var(--accent-gold), #d97706);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-top: 20px;
+            display: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+        }
+        .share-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
         }
         
         .footer-links a {
@@ -210,7 +336,18 @@
             <p>Calculate the environmental impact of your clothing choices</p>
         </div>
         
+        <div class="magic-fill-container">
+            <h4><i class="fas fa-magic"></i> Quick-Fill from URL</h4>
+            <p style="font-size: 0.75rem; opacity: 0.8; margin: 0;">Paste a product link from Zara, H&M, etc. to auto-detect materials.</p>
+            <div class="url-input-group">
+                <input type="text" id="productUrl" class="url-input" placeholder="https://example.com/product...">
+                <button id="magicBtn" class="magic-btn" onclick="magicFill()">Fill Details</button>
+            </div>
+            <div id="scrapeStatus" style="font-size: 0.75rem; margin-top: 5px; display: none;"></div>
+        </div>
+
         <div class="form-group">
+
             <label for="material"><i class="fas fa-tshirt"></i> Material:</label>
             <select id="material" required>
                 <option value="" disabled selected>Select Material</option>
@@ -249,6 +386,25 @@
         </div>
         
         <div class="form-group">
+            <label for="brand"><i class="fas fa-industry"></i> Clothing Brand:</label>
+            <select id="brand" required>
+                {% for b in brands %}
+                <option value="{{ b }}">{{ b }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="country_of_origin"><i class="fas fa-globe"></i> Country of Origin (Manufacturing):</label>
+            <select id="country_of_origin" required>
+                <option value="Local" selected>Local / Domestic (Low Shipping)</option>
+                <option value="Asia">Asia (High Shipping)</option>
+                <option value="Europe">Europe (Moderate Shipping)</option>
+                <option value="Americas">Americas (Moderate Shipping)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
             <label for="weight"><i class="fas fa-weight-hanging"></i> Weight (kg):</label>
             <input type="number" id="weight" placeholder="Enter weight in kilograms" step="0.1" min="0">
         </div>
@@ -267,9 +423,39 @@
         </button>
         
         <div class="result-container" id="resultContainer">
-            <p>Your estimated carbon footprint:</p>
+            <p style="font-size: 1.1rem; font-weight: 500;">Your estimated carbon footprint:</p>
             <div class="result-value" id="result"></div>
-            <p id="ecoMessage" style="margin-top: 0.5rem; font-size: 0.9rem;"></p>
+            
+            <div class="metrics-grid" id="metricsGrid" style="display: none;">
+                <div class="metric-card">
+                    <h4><i class="fas fa-tint" style="color: #64b5f6;"></i> <span id="waterStat">0</span> L</h4>
+                    <p>Water Footprint</p>
+                </div>
+                <div class="metric-card">
+                    <h4><i class="fas fa-fish" style="color: #e57373;"></i> <span id="plasticStat">0</span> g</h4>
+                    <p>Microplastics Shed</p>
+                </div>
+                <div class="metric-card">
+                    <h4><i class="fas fa-coins" style="color: var(--accent-gold);"></i> $<span id="resaleStat">0</span></h4>
+                    <p>Resale Potential</p>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 1rem; margin-top: 1rem;">
+                <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;">Eco-Rating</p>
+                <div class="eco-score-box" id="ecoScoreBox">?</div>
+            </div>
+
+            <p id="ecoMessage" style="font-size: 1.05rem; font-weight: 500;"></p>
+            
+            <button id="shareButton" class="share-btn" onclick="shareEcoCard()" style="background-color: #6aab20; width: 100%;">
+                <i class="fas fa-camera"></i> Save & Share Eco-Card
+            </button>
+
+            <div class="suggestion-box" id="suggestionBox" style="display: none;">
+                <strong><i class="fas fa-lightbulb" style="color: var(--accent);"></i> Tip:</strong>
+                <span id="suggestionText"></span>
+            </div>
         </div>
         
         <div class="footer-links">
@@ -278,6 +464,7 @@
     </div>
 
     <script>
+        // Standard Manual Calculation logic
         document.addEventListener('DOMContentLoaded', function() {
             const calculateBtn = document.getElementById('calculateButton');
             const resultContainer = document.getElementById('resultContainer');
@@ -315,42 +502,114 @@
                     formData.append("material", material);
                     formData.append("washing_frequency", washingFreq);
                     formData.append("drying_method", dryingMethod);
-                    formData.append("ironing_frequency", ironingFreq);
-                    
+                    const countryOfOrigin = document.getElementById('country_of_origin').value;
+                    const brand = document.getElementById('brand').value;
                     const weight = document.getElementById('weight').value.trim();
-                    formData.append("weight", weight ? parseFloat(weight) : 0);
                     
-                    formData.append("is_wearing_today", document.getElementById('is_wearing_today').value);
-                    
-                    const response = await fetch("/calculate", {
-                        method: "POST",
-                        body: formData
+                    const response = await fetch('/calculate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            material: material,
+                            washing_frequency: washingFreq,
+                            drying_method: dryingMethod,
+                            ironing_frequency: ironingFreq,
+                            weight: weight ? parseFloat(weight) : 0,
+                            country_of_origin: countryOfOrigin,
+                            brand: brand,
+                            is_wearing_today: document.getElementById('is_wearing_today').value
+                        })
                     });
                     
                     const data = await response.json();
                     
                     if (response.ok) {
-                        const footprint = data.carbon_footprint || '0.00';
-                        showResult(`${footprint} kg CO₂`, false);
+                        const footprintStr = data.carbon_footprint || '0.00';
+                        showResult(`${footprintStr}`, false);
                         
-                        // Add eco-friendly message based on footprint
-                        const footprintValue = parseFloat(footprint);
-                        if (footprintValue < 1.0) {
-                            ecoMessage.textContent = "🌱 Excellent! This is an eco-friendly choice.";
-                            ecoMessage.style.color = "var(--success)";
-                        } else if (footprintValue < 2.5) {
-                            ecoMessage.textContent = "🌿 Good choice! Consider more sustainable options.";
-                            ecoMessage.style.color = "#a3c14a";
+                        // Parse float from string like "5.50 kg of CO2"
+                        const footprintValue = parseFloat(footprintStr);
+                        
+                        // Eco-Score A to E styling and logic
+                        const ecoScoreBox = document.getElementById('ecoScoreBox');
+                        let score = 'A';
+                        let bgColor = '#28a745'; // target success green
+                        
+                        if (footprintValue <= 1.5) {
+                            score = 'A'; bgColor = '#28a745';
+                            ecoMessage.textContent = "🌱 Excellent! Very low environmental impact.";
+                            ecoMessage.style.color = "#28a745";
+                        } else if (footprintValue <= 4.0) {
+                            score = 'B'; bgColor = '#8bc34a';
+                            ecoMessage.textContent = "🌿 Good choice! Fairly sustainable.";
+                            ecoMessage.style.color = "#8bc34a";
+                        } else if (footprintValue <= 7.0) {
+                            score = 'C'; bgColor = '#ffc107';
+                            ecoMessage.textContent = "⚠️ Moderate impact. Room for improvement.";
+                            ecoMessage.style.color = "#ffc107";
+                        } else if (footprintValue <= 12.0) {
+                            score = 'D'; bgColor = '#fd7e14';
+                            ecoMessage.textContent = "🚨 High impact. Consider more sustainable options.";
+                            ecoMessage.style.color = "#fd7e14";
                         } else {
-                            ecoMessage.textContent = "⚠️ High impact. Explore more sustainable alternatives.";
-                            ecoMessage.style.color = "var(--error)";
+                            score = 'E'; bgColor = '#dc3545';
+                            ecoMessage.textContent = "❌ Very high impact! Harmful to the environment.";
+                            ecoMessage.style.color = "#dc3545";
                         }
+                        
+                        ecoScoreBox.textContent = score;
+                        ecoScoreBox.style.background = bgColor;
+
+                        // Show Water and Plastics
+                        document.getElementById('waterStat').innerText = data.water_liters;
+                        document.getElementById('plasticStat').innerText = data.microplastics_grams;
+                        document.getElementById('resaleStat').innerText = data.resale_value;
+                        document.getElementById('metricsGrid').style.display = 'grid';
+
+
+                        if (score === 'A' || score === 'B') {
+                            document.getElementById('shareButton').style.display = 'block';
+                        } else {
+                            document.getElementById('shareButton').style.display = 'none';
+                        }
+
+                        // Alternative Suggestions Logic
+                        const suggestionBox = document.getElementById('suggestionBox');
+                        const suggestionText = document.getElementById('suggestionText');
+                        let suggestion = "";
+
+                        if (data.brand_multiplier > 1.2) {
+                            suggestion = `This brand has a fast fashion penalty (${data.brand_multiplier}x impact). Switching to eco-brands like Patagonia saves massive emissions.`;
+                        } else if (data.microplastics_grams > 0) {
+                            suggestion = `This garment releases ${data.microplastics_grams}g of microplastics per wash. Try a Guppyfriend washing bag to protect oceans!`;
+                        } else if (data.water_liters > 3000) {
+                            suggestion = `This garment consumed ${data.water_liters} liters of water to produce! Consider buying secondhand next time to save water.`;
+                        } else if (material.toLowerCase() === 'polyester' || material.toLowerCase() === 'nylon') {
+                            suggestion = `Switching to Recycled Polyester or Organic Cotton could save roughly ${(footprintValue * 0.4).toFixed(1)} kg CO₂ per item!`;
+                        } else if (washingFreq === 'Daily') {
+                            suggestion = `Washing clothes Weekly instead of Daily can reduce this item's footprint by at least 30%.`;
+                        } else if (dryingMethod === 'Machine') {
+                            suggestion = `Air drying instead of Machine drying saves energy and lowers emissions significantly.`;
+                        } else if (document.getElementById('country_of_origin').value === 'Asia' || document.getElementById('country_of_origin').value === 'Americas') {
+                            suggestion = `Buying locally manufactured clothing drastically reduces shipping emissions!`;
+                        } else {
+                            suggestion = `Great job! Keep making eco-friendly choices to build a sustainable wardrobe.`;
+                        }
+                        
+                        suggestionText.textContent = suggestion;
+                        suggestionBox.style.display = 'block';
+
                     } else {
                         showResult(data.error || "Calculation failed. Please try again.", true);
+                        document.getElementById('suggestionBox').style.display = 'none';
                     }
                 } catch (error) {
                     console.error("Calculation error:", error);
                     showResult("Network error. Please try again.", true);
+                    document.getElementById('suggestionBox').style.display = 'none';
                 } finally {
                     // Reset button state
                     buttonText.textContent = 'Calculate Footprint';
@@ -374,9 +633,110 @@
                 resultText.textContent = message;
                 resultContainer.style.display = 'block';
                 resultText.style.color = isError ? 'var(--error)' : 'var(--accent)';
-                ecoMessage.textContent = '';
+                if (isError) {
+                    ecoMessage.textContent = '';
+                    document.getElementById('ecoScoreBox').textContent = '?';
+                    document.getElementById('ecoScoreBox').style.background = '#6c757d';
+                }
             }
         });
+        async function magicFill() {
+            const url = document.getElementById('productUrl').value;
+            const btn = document.getElementById('magicBtn');
+            const status = document.getElementById('scrapeStatus');
+            
+            if (!url) {
+                alert("Please paste a product URL first!");
+                return;
+            }
+
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reading...';
+            status.style.display = "block";
+            status.style.color = "var(--accent)";
+            status.innerText = "✨ Interrogating the retail gods...";
+
+            try {
+                const response = await fetch(`/api/scrape-product?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                if (data.success && data.materials.length > 0) {
+                    const material = data.materials[0].material;
+                    const select = document.getElementById('material');
+                    
+                    // Find and select the material
+                    let found = false;
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value.toLowerCase() === material.toLowerCase()) {
+                            select.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (found) {
+                        status.style.color = "var(--accent)";
+                        status.innerHTML = `✅ Detected <strong>${material}</strong> from ${data.title}`;
+                        // Trigger a slight highlight effect
+                        select.style.boxShadow = "0 0 15px var(--accent)";
+                        setTimeout(() => { select.style.boxShadow = "none"; }, 2000);
+                    } else {
+                        status.style.color = "var(--warning)";
+                        status.innerHTML = `⚠️ Found <strong>${material}</strong> but it's not in our database yet.`;
+                    }
+                } else {
+                    status.style.color = "var(--warning)";
+                    status.innerText = "❌ Couldn't find specific materials. Try manual selection.";
+                }
+            } catch (err) {
+                console.error(err);
+                status.style.color = "var(--error)";
+                status.innerText = "❌ Connection failed. Check the URL.";
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function shareEcoCard() {
+
+            const resultBox = document.getElementById('resultContainer');
+            const shareBtn = document.getElementById('shareButton');
+            const suggestionBox = document.getElementById('suggestionBox');
+            
+            // Temporarily hide elements we don't want in the screenshot
+            shareBtn.style.display = 'none';
+            const wasSuggestionVisible = suggestionBox.style.display !== 'none';
+            suggestionBox.style.display = 'none';
+
+            // Add a temporary watermark for the saved image
+            const watermark = document.createElement('div');
+            watermark.innerHTML = "<b>GreenThread App</b> | Built for the Future";
+            watermark.style.cssText = "margin-top: 15px; font-size: 0.8rem; opacity: 0.7;";
+            resultBox.appendChild(watermark);
+
+            try {
+                const canvas = await html2canvas(resultBox, {
+                    backgroundColor: '#1a3e2f', // match primary theme color
+                    scale: 2 // high resolution
+                });
+                
+                // Trigger download
+                const link = document.createElement('a');
+                link.download = `GreenThread-EcoScore-${document.getElementById('ecoScoreBox').innerText}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+            } catch (err) {
+                console.error("Screenshot failed:", err);
+            }
+
+            // Restore elements
+            shareBtn.style.display = 'block';
+            if(wasSuggestionVisible) suggestionBox.style.display = 'block';
+            resultBox.removeChild(watermark);
+        }
     </script>
 </body>
 </html>

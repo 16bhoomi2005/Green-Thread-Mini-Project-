@@ -6,16 +6,21 @@
     <title>Sustainability Dashboard | GreenThread</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
-            --primary: #1a3e2f;
-            --primary-light: #2c5e4a;
-            --accent: #ffdd57;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --success: #28a745;
-            --info: #17a2b8;
-            --warning: #ffc107;
+            --primary: #0f172a;           /* Deep Midnight Navy */
+            --primary-light: #1e293b;     /* Slate Blue */
+            --accent: #10b981;            /* Vibrant Emerald */
+            --accent-gold: #fbbf24;       /* Success Gold */
+            --light: #f8fafc;
+            --dark: #020617;
+            --success: #10b981;
+            --info: #0ea5e9;              /* Modern Sky Blue */
+            --warning: #f59e0b;           /* Modern Amber */
+            --error: #ef4444;             /* Modern Red */
         }
         
         * {
@@ -26,7 +31,7 @@
         
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            background: radial-gradient(circle at top left, #1e293b, #0f172a);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -75,7 +80,7 @@
         
         .stats-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 1rem;
             margin-bottom: 2rem;
         }
@@ -97,9 +102,201 @@
         .stat-value {
             font-size: 1.8rem;
             font-weight: 700;
-            color: var(--accent);
+            color: var(--accent-gold);
             margin-bottom: 0.5rem;
         }
+
+        .ml-card h3 {
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        /* AI Consultant Styles */
+        .ai-consultant-card {
+            background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(2, 6, 23, 0.4));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideIn 0.8s ease-out;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .ai-avatar {
+            width: 42px;
+            height: 42px;
+            background: var(--accent);
+            color: var(--dark);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .ai-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        .ai-message {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.9);
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            min-height: 60px;
+        }
+
+        .ask-ai-btn {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .ask-ai-btn:hover {
+            background: var(--accent);
+            color: var(--dark);
+            transform: translateY(-2px);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* History Log Styles */
+        .history-section {
+            margin-top: 3rem;
+            text-align: left;
+        }
+
+        .history-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info h4 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .item-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .greentag-btn {
+            background: var(--light);
+            color: var(--dark);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--primary-light);
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 300px;
+            border: 2px solid var(--accent);
+        }
+
+        /* Map Styles */
+        #map {
+            height: 250px;
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .qr-img {
+            width: 200px;
+            height: 200px;
+            margin: 1rem 0;
+            border: 5px solid white;
+            border-radius: 10px;
+        }
+
+
+
+        /* Budget Tracker Bar */
+        .budget-container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .budget-bar-bg {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .budget-bar-fill {
+            height: 100%;
+            transition: width 1s ease-in-out, background-color 0.5s ease;
+            width: 0%;
+        }
+
         
         .stat-label {
             font-size: 0.9rem;
@@ -183,9 +380,20 @@
         }
         
         .badge-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent);
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #fbbf24);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+            margin-top: 5px;
+        }
+        
+        .badge-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
         }
         
         @media (max-width: 576px) {
@@ -207,6 +415,59 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <div class="user-info">
+            <h2>Welcome to Your Green Dashboard, <span>{{ user[1] }}</span> 👋</h2>
+            <p><strong>Member Since:</strong> {{ user[4] }}</p>
+        </div>
+
+        <!-- Monthly Carbon Budget Tracker -->
+        <div class="budget-container">
+            <div class="budget-header">
+                <div>
+                    <h3 style="color: var(--accent); margin-bottom: 4px;"><i class="fas fa-bullseye"></i> Monthly Carbon Diet</h3>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">Your goal is to stay under <strong>{{ budget_kg }} kg</strong> this month.</p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 1.5rem; font-weight: 700; color: white;">{{ monthly_emissions }}</span>
+                    <span style="font-size: 0.9rem; opacity: 0.8;">kg used</span>
+                </div>
+            </div>
+            
+            <div class="budget-bar-bg">
+                <div class="budget-bar-fill" id="budgetBar"></div>
+            </div>
+            <p id="budgetMessage" style="font-size: 0.85rem; margin-top: 8px; text-align: right;"></p>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const emitted = parseFloat("{{ monthly_emissions or 0 }}");
+                const budget = parseFloat("{{ budget_kg or 15 }}");
+                const percentage = Math.min((emitted / budget) * 100, 100);
+                
+                const bar = document.getElementById('budgetBar');
+                const msg = document.getElementById('budgetMessage');
+                
+                // Allow the bar to animate in
+                setTimeout(() => { bar.style.width = percentage + '%'; }, 300);
+
+                if (percentage < 50) {
+                    bar.style.backgroundColor = 'var(--success)';
+                    msg.innerHTML = "🌱 You're doing great! Lots of budget left.";
+                    msg.style.color = 'var(--success)';
+                } else if (percentage < 85) {
+                    bar.style.backgroundColor = '#f0a500';
+                    msg.innerHTML = "⚠️ Starting to get close to your limit.";
+                    msg.style.color = '#f0a500';
+                } else {
+                    bar.style.backgroundColor = 'var(--error)';
+                    msg.innerHTML = "🚨 Warning: You have almost depleted your carbon diet!";
+                    msg.style.color = 'var(--error)';
+                }
+            });
+        </script>
+
+        <!-- ML Predictive Forecast Card -->
         <div class="dashboard-header">
             <h1><i class="fas fa-user-circle"></i> {{ username }}'s Dashboard</h1>
             <p>Your sustainability journey at a glance</p>
@@ -221,6 +482,38 @@
             <div class="stat-card">
                 <div class="stat-value">{{ avg_emission }} kg</div>
                 <div class="stat-label">Average Per Item</div>
+            </div>
+
+            <div class="stat-card" style="border-bottom: 3px solid var(--accent-gold);">
+                <div class="stat-value" style="color: var(--accent-gold);">${{ total_resale }}</div>
+                <div class="stat-label">Wardrobe Asset Value</div>
+                <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">(Resale Potential)</div>
+            </div>
+
+            <div class="stat-card" style="border-bottom: 3px solid var(--warning);">
+                <div class="stat-value" style="color: var(--warning);">{{ predicted_december }} kg</div>
+                <div class="stat-label"><i class="fas fa-robot"></i> Trend by Dec 31</div>
+                <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">(ML Projected)</div>
+            </div>
+        </div>
+
+        <!-- AI Sustainability Consultant -->
+        <div class="ai-consultant-card">
+            <div class="ai-header">
+                <div class="ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="ai-title">Eco-Consultant AI</div>
+            </div>
+            <div class="ai-message" id="aiMessage">
+                Welcome back! I've analyzed your data. Click below for your personalized impact strategy...
+            </div>
+            <button class="ask-ai-btn" id="askAiBtn" onclick="getAIAdvice()">Get Personal Advice</button>
+        </div>
+        
+        <div class="chart-container"
+ style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(255, 255, 255, 0.05);">
+            <h3 style="text-align: center; margin-bottom: 1rem; font-weight: 600; font-size: 1.1rem; color: var(--light);">Material Footprint Breakdown</h3>
+            <div style="position: relative; height: 250px; width: 100%;">
+                <canvas id="footprintPieChart"></canvas>
             </div>
         </div>
         
@@ -246,6 +539,52 @@
             <div class="badge-title">Your Current Sustainability Level</div>
             <div class="badge-value" id="userBadge">Loading...</div>
         </div>
+
+        <div class="history-section">
+            <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-history"></i> Sustainability Log
+            </h3>
+            {% if data %}
+                {% for item in data %}
+                <div class="history-card">
+                    <div class="item-info">
+                        <h4>{{ item[1] }} ({{ item[2] }} kg CO₂)</h4>
+                        <p>{{ item[0] }}</p>
+                    </div>
+                    <button class="greentag-btn" onclick="showGreentag('{{ item[1] }}', '{{ item[2] }}')">
+                        <i class="fas fa-qrcode"></i> TAG
+                    </button>
+                    <button class="greentag-btn" style="background: var(--info); color: white;" onclick="showJourney('{{ item[1] }}')">
+                        <i class="fas fa-route"></i> PATH
+                    </button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="opacity: 0.6; text-align: center;">No items logged yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div id="qrModal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="color: var(--accent);">Your Greentag</h3>
+            <p id="qrTitle" style="font-size: 0.8rem; margin-bottom: 10px;"></p>
+            <img id="qrImage" src="" alt="QR Tag" class="qr-img">
+            <p style="font-size: 0.7rem; opacity: 0.8;">Link this piece of clothing to its digital sustainability passport.</p>
+            <button class="ask-ai-btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Map Modal -->
+    <div id="mapModal" class="modal" onclick="closeMap()">
+        <div class="modal-content" style="max-width: 500px;" onclick="event.stopPropagation()">
+            <h3 style="color: var(--accent);">Garment Journey</h3>
+            <p id="mapTitle" style="font-size: 0.8rem;"></p>
+            <div id="map"></div>
+            <p style="font-size: 0.7rem; opacity: 0.8; margin-top: 10px;">This visualization shows the estimated transit from the manufacturing hub to your location.</p>
+            <button class="ask-ai-btn" onclick="closeMap()">Close Map</button>
+        </div>
     </div>
 
     <script>
@@ -267,7 +606,139 @@
                     document.getElementById('userBadge').textContent = 
                         "Sustainability Champion 🌿";
                 });
+
+            // Fetch Pi Chart Data
+            fetch('/api/user-pie-data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.labels && data.labels.length > 0) {
+                        const ctx = document.getElementById('footprintPieChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: data.labels,
+                                datasets: [{
+                                    data: data.values,
+                                    backgroundColor: [
+                                        '#ffdd57', '#28a745', '#17a2b8', '#ffc107', '#dc3545', '#6610f2', '#fd7e14'
+                                    ],
+                                    borderWidth: 0,
+                                    hoverOffset: 4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'right',
+                                        labels: {
+                                            color: '#f8f9fa',
+                                            font: {
+                                                family: "'Poppins', sans-serif"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        document.getElementById('footprintPieChart').parentElement.innerHTML = '<p style="text-align:center; opacity:0.7;">No data available yet</p>';
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to load pie chart data", err);
+                });
         });
+
+        async function getAIAdvice() {
+            const messageEl = document.getElementById('aiMessage');
+            const btn = document.getElementById('askAiBtn');
+            
+            btn.disabled = true;
+            const originalText = btn.innerText;
+            btn.innerText = "Analyzing...";
+            messageEl.innerHTML = "Thinking...";
+            
+            try {
+                const response = await fetch('/api/ai-advice');
+                const data = await response.json();
+                
+                // Typing effect
+                let i = 0;
+                messageEl.innerHTML = "";
+                const advice = data.advice;
+                
+                const interval = setInterval(() => {
+                    messageEl.innerHTML += advice.charAt(i);
+                    i++;
+                    if (i >= advice.length) {
+                        clearInterval(interval);
+                        btn.disabled = false;
+                        btn.innerText = "Great, thanks!";
+                        setTimeout(() => { btn.innerText = "Get New Advice"; }, 3000);
+                    }
+                }, 15);
+                
+            } catch (err) {
+                messageEl.innerText = "My eco-circuits are busy. Try again in a moment!";
+                btn.disabled = false;
+                btn.innerText = "Retry";
+            }
+        }
+
+        function showGreentag(material, footprint) {
+            const modal = document.getElementById('qrModal');
+            const img = document.getElementById('qrImage');
+            const title = document.getElementById('qrTitle');
+            
+            const qrData = encodeURIComponent(`GreenThread Passport | Material: ${material} | Footprint: ${footprint}kg CO2`);
+            img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrData}&bgcolor=ffffff`;
+            title.innerText = `${material} Card`;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeMap() {
+            document.getElementById('mapModal').style.display = 'none';
+        }
+
+        let map = null;
+        function showJourney(material) {
+            document.getElementById('mapModal').style.display = 'flex';
+            document.getElementById('mapTitle').innerText = `${material} Supply Chain Route`;
+
+            if (!map) {
+                map = L.map('map').setView([20, 0], 2);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(map);
+            }
+
+            // Clean previous layers
+            map.eachLayer((layer) => { if (layer instanceof L.Polyline || layer instanceof L.Marker) map.removeLayer(layer); });
+
+            // Mock coordinates for Mfg Hubs
+            const hubs = {
+                'China': [35.8617, 104.1954],
+                'India': [20.5937, 78.9629],
+                'Bangladesh': [23.685, 90.3563],
+                'Turkey': [38.9637, 35.2433]
+            };
+            
+            const start = hubs['India']; // Default start
+            const end = [40.7128, -74.0060]; // Mock end (NY)
+
+            L.marker(start).addTo(map).bindPopup("Manufacturing Hub");
+            L.marker(end).addTo(map).bindPopup("Current Location (User)");
+            
+            const latlngs = [start, end];
+            const polyline = L.polyline(latlngs, {color: 'var(--accent)', weight: 3, dashArray: '5, 10'}).addTo(map);
+            map.fitBounds(polyline.getBounds(), {padding: [30, 30]});
+        }
     </script>
+
+
+
 </body>
 </html>

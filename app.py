@@ -12,8 +12,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import re
 import pytz
 import glob
-import tempfile
 import shutil
+from dotenv import load_dotenv
+import requests
+from bs4 import BeautifulSoup
+import base64
+import io
+from PIL import Image
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Required for session management
@@ -23,9 +30,140 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GRAPH_DIR = os.path.join(BASE_DIR, "static/graphs")
 os.makedirs(GRAPH_DIR, exist_ok=True)
 
+# Fabric keywords to CO2 mapping (blended fabric support)
+FABRIC_CO2 = {
+    'cotton':             5.90,
+    'polyester':          9.52,
+    'nylon':              7.20,
+    'wool':              10.00,
+    'linen':              1.90,
+    'viscose':            4.50,
+    'rayon':              4.50,
+    'elastane':          28.00,
+    'spandex':           28.00,
+    'acrylic':            7.60,
+    'silk':               6.00,
+    'hemp':               2.10,
+    'lyocell':            2.40,
+    'tencel':             2.40,
+    'recycled polyester': 3.50,
+    'organic cotton':     3.80,
+}
+
+def parse_fabric_blend(text):
+    """
+    Extract fabric percentages from OCR text.
+    Handles formats like: '60% Cotton 40% Polyester'
+    """
+    text = text.lower()
+    results = []
+
+    # Match patterns like "60% cotton" or "cotton 60%"
+    pattern = r'(\d+)\s*%\s*([a-z\s]+?)(?=\d+\s*%|$|,|\n)'
+    matches = re.findall(pattern, text)
+
+    for percent_str, fabric_name in matches:
+        fabric_name = fabric_name.strip().rstrip(',').strip()
+        percent = int(percent_str) / 100.0
+
+        for known_fabric in FABRIC_CO2:
+            if known_fabric in fabric_name or fabric_name in known_fabric:
+                results.append({
+                    'fabric': known_fabric,
+                    'percent': percent,
+                    'co2_per_kg': FABRIC_CO2[known_fabric]
+                })
+                break
+
+    return results
+
+def calculate_blended_co2(blend_list, weight_kg):
+    total_co2 = 0
+    for item in blend_list:
+        total_co2 += item['co2_per_kg'] * item['percent'] * weight_kg
+    return round(total_co2, 3)
+
+# Additional Sustainability Metrics
+FABRIC_WATER_LITERS_PER_KG = {
+    'cotton (conventional)': 10000,
+    'organic cotton': 2500,
+    'polyester': 60,
+    'recycled polyester': 50,
+    'nylon': 100,
+    'wool': 5000,
+    'linen/flax': 2000,
+    'viscose/rayon': 1000
+}
+
+FABRIC_MICROPLASTICS_GRAMS_PER_KG = {
+    'polyester': 1.5,
+    'recycled polyester': 1.5,
+    'nylon': 1.2,
+    # Natural fibers shed biodegradable material, not persistent microplastics
+    'cotton (conventional)': 0.0,
+    'organic cotton': 0.0,
+    'wool': 0.0,
+    'linen/flax': 0.0,
+    'viscose/rayon': 0.0
+}
+
+BRAND_MULTIPLIERS = {
+    'Generic / Unknown': 1.0,
+    'Shein': 1.5,        # Ultra fast fashion penalty
+    'Zara': 1.3,         # Fast fashion penalty
+    'H&M': 1.3,
+    'Levis': 1.1,        # Better, but resource intensive
+    'Patagonia': 0.7,    # Eco-conscious discount
+    'Pact': 0.7,
+    'Tentree': 0.6       # Very high carbon offset operations
+}
+
+# Helper for Carbon Interface API
+def get_shipping_emission(weight, distance_km=1000):
+    api_key = os.environ.get('CARBON_INTERFACE_API_KEY')
+    if not api_key or api_key == 'YOUR_CARBON_INTERFACE_KEY':
+        return None
+        
+    try:
+        response = requests.post(
+            "https://beta.carboninterface.com/api/v1/estimates",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "type": "shipping",
+                "weight_value": weight if weight > 0 else 1,
+                "weight_unit": "kg",
+                "distance_value": distance_km,
+                "distance_unit": "km",
+                "transport_method": "truck"
+            },
+            timeout=5
+        )
+        if response.status_code == 201 or response.status_code == 200:
+            return response.json()["data"]["attributes"]["carbon_kg"]
+        else:
+            app.logger.warning(f"Carbon API Error: {response.text}")
+    except Exception as e:
+        app.logger.error(f"Carbon API Request Failed: {str(e)}")
+    return None
+
 # Function to connect to SQLite
 def get_db_connection():
-    conn = sqlite3.connect('carbon_footprint_db.db')
+    db_path = 'carbon_footprint_db.db'
+    
+    # Vercel fix: Filesystem is read-only except for /tmp
+    if os.environ.get('VERCEL'):
+        tmp_db_path = os.path.join('/tmp', 'carbon_footprint_db.db')
+        if not os.path.exists(tmp_db_path):
+            # Seed the /tmp database from the included one
+            if os.path.exists(db_path):
+                import shutil
+                shutil.copy(db_path, tmp_db_path)
+            else:
+                # If the original doesn't exist (unlikely), just create path
+                db_path = tmp_db_path
+        db_path = tmp_db_path
+
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row  # Enables column access by name
     return conn
 
@@ -174,9 +312,43 @@ def admin_login():
 @app.route('/admin_login')
 def admin_login_page():
     return render_template('admin_login.html')
+
 @app.route('/')
 def home():
-    return render_template('home.html')
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # Calculate community impact: assume average non-eco item footprint is 15kg.
+        # Savings = 15 - actual footprint
+        cursor.execute("SELECT SUM(15.0 - footprint) FROM carbon_footprint WHERE footprint < 15.0")
+        saved_co2 = cursor.fetchone()[0] or 0.0
+        saved_co2 = round(saved_co2, 1)
+        return render_template('home.html', saved_co2=saved_co2)
+    except Exception as e:
+        app.logger.error(f"Error fetching saved CO2: {str(e)}")
+        return render_template('home.html', saved_co2=0.0)
+    finally:
+        conn.close()
+
+@app.route('/impact')
+def impact():
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT AVG(footprint) FROM carbon_footprint")
+        avg_footprint = cursor.fetchone()[0] or 12.0
+        
+        # Scenario: if 40M college students reduced their garment footprint by 10%
+        # assuming the user logs roughly 50 garments a year (avg)
+        annual_footprint_per_student = avg_footprint * 50
+        potential_savings = annual_footprint_per_student * 0.10 * 40000000
+        
+        return render_template('impact.html', potential_savings=potential_savings)
+    except Exception as e:
+        return f"Error: {e}", 500
+    finally:
+        conn.close()
+
 @app.route('/index')
 def index():
     return render_template('index.html')
@@ -565,9 +737,36 @@ def calculator():
     cursor = conn.cursor()
     cursor.execute("SELECT material FROM materials")
     materials = cursor.fetchall()
+    
+    # Auto-seed the database if materials are missing (e.g. user has not run update_db.py)
+    if len(materials) < 5:
+        # Default scientifically baked emission factors
+        defaults = [
+            ('Cotton (conventional)', 5.9, 'Moderate'),
+            ('Polyester', 9.52, 'High Impact'),
+            ('Nylon', 7.2, 'High Impact'),
+            ('Wool', 10.0, 'Moderate'),
+            ('Viscose/Rayon', 4.5, 'Moderate'),
+            ('Linen/Flax', 1.9, 'Eco-Friendly'),
+            ('Organic cotton', 3.8, 'Eco-Friendly'),
+            ('Recycled polyester', 3.5, 'Eco-Friendly')
+        ]
+        
+        for mat in defaults:
+            try:
+                cursor.execute("INSERT INTO materials (material, material_footprint, eco_rating) VALUES (?, ?, ?)", mat)
+            except Exception as e:
+                pass # skip if already exists or fails
+        conn.commit()
+        
+        # Re-fetch the populated list
+        cursor.execute("SELECT material FROM materials")
+        materials = cursor.fetchall()
+
     conn.close()
 
-    return render_template('calculator.html', materials=materials)
+    brands = list(BRAND_MULTIPLIERS.keys())
+    return render_template('calculator.html', materials=materials, brands=brands)
 
 def cleanup_old_graphs(username):
     """
@@ -743,7 +942,7 @@ def calculate():
     if 'user' not in session:
         return jsonify({"message": "User not logged in"}), 401
 
-    data = request.form
+    data = request.get_json(silent=True) or request.form
     app.logger.debug(f"Incoming data: {data}")  # Log the incoming data
 
     # Validate required fields
@@ -755,6 +954,8 @@ def calculate():
     drying_method = data.get('drying_method')
     washing_frequency = data.get('washing_frequency')
     ironing_frequency = data.get('ironing_frequency', 'Rarely')
+    country_of_origin = data.get('country_of_origin', 'Local')
+    brand = data.get('brand', 'Generic / Unknown')
     weight = float(data.get('weight', 0) or 0)
     is_wearing_today = data.get('is_wearing_today', 'no').lower()
     is_wearing_today = 1 if is_wearing_today == 'yes' else 0
@@ -796,11 +997,45 @@ def calculate():
 
         carbon_footprint = base_emission * washing_modifier * drying_modifier * ironing_modifier
         if weight > 0:
-            carbon_footprint *= weight * 0.1  # Example: weight factor (you can adjust this formula)
+            carbon_footprint *= weight * 0.1  # Example: weight factor
 
-        app.logger.debug(f"Material: {material}, Base Emission: {base_emission}")
-        app.logger.debug(f"Washing Modifier: {washing_modifier}, Drying Modifier: {drying_modifier}, Ironing Modifier: {ironing_modifier}")
-        app.logger.debug(f"Weight: {weight}, Carbon Footprint: {carbon_footprint}")
+        # Shipping addition based on Country of Origin using Live APIs
+        country_distances = {
+            "Local": 100,
+            "Asia": 8000,
+            "Europe": 3000,
+            "Americas": 5000
+        }
+        distance_km = country_distances.get(country_of_origin, 100)
+        shipping_emission = get_shipping_emission(weight=max(weight, 1.0), distance_km=distance_km)
+        
+        if shipping_emission is not None:
+            carbon_footprint += shipping_emission
+        else:
+            carbon_footprint += distance_km * 0.00015
+
+        # Apply Brand Penalty/Discount Multiplier
+        b_multiplier = BRAND_MULTIPLIERS.get(brand, 1.0)
+        carbon_footprint *= b_multiplier
+
+        carbon_footprint = round(carbon_footprint, 2)
+
+        # Calculate Resale Index (Circular Economy Feature)
+        resale_multipliers = {
+            'linen': 0.6, 'wool': 0.55, 'silk': 0.5, 'cotton': 0.45, 
+            'organic cotton': 0.52, 'nylon': 0.25, 'polyester': 0.15, 'viscose': 0.3
+        }
+        material_mult = resale_multipliers.get(mat_key, 0.2)
+        
+        # Brand impact on resale
+        brand_resale_mult = 1.0
+        if b_multiplier < 0.8: # Eco brand
+            brand_resale_mult = 1.35
+        elif b_multiplier > 1.2: # Fast fashion
+            brand_resale_mult = 0.45
+            
+        # Estimated Resale Value ($40 base price * quality factors)
+        resale_value = 40 * material_mult * brand_resale_mult
 
         # Save the record if the user is wearing the material today
         if is_wearing_today == 1:
@@ -810,11 +1045,13 @@ def calculate():
             """, (session['user'], get_ist_time(), material, washing_frequency, drying_method, ironing_frequency, weight, carbon_footprint, is_wearing_today))
             conn.commit()
 
-            app.logger.info(f"Record saved for user: {session['user']}")
-
         return jsonify({
             "message": "Calculation Successful",
-            "carbon_footprint": f"{carbon_footprint:.2f} kg of CO2"
+            "carbon_footprint": f"{carbon_footprint:.2f} kg of CO2",
+            "water_liters": water_liters,
+            "microplastics_grams": micro_grams,
+            "brand_multiplier": b_multiplier,
+            "resale_value": round(resale_value, 2)
         }), 200
 
     except Exception as e:
@@ -822,14 +1059,50 @@ def calculate():
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
 @app.route('/user_data', methods=['GET'])
 def user_data():
     user = session.get('user')  # Get the logged-in user from the session
 
     if not user:
-        return jsonify({'error': 'User not logged in'}), 401  # Unauthorized response
+        return redirect(url_for('home'))  # Redirect to home if not logged in
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get user data
+    cursor.execute("SELECT * FROM users WHERE username = ?", (user,))
+    user_info = cursor.fetchone()
+
+    # Default monthly budget logic
+    budget_kg = 15.0  # Default budget limit
     
-    conn = None  # Initialize connection variable
+    # Calculate current month's emissions
+    current_month = datetime.now().strftime('%Y-%m')
+    cursor.execute("SELECT SUM(footprint) FROM carbon_footprint WHERE username = ? AND date LIKE ?", (user, f"{current_month}%"))
+    monthly_emissions_raw = cursor.fetchone()[0]
+    monthly_emissions = round(monthly_emissions_raw, 2) if monthly_emissions_raw else 0.0
+    
+    # Calculate Total Wardrobe Resale Value (Approximation)
+    resale_multipliers = {
+        'linen': 0.6, 'wool': 0.55, 'silk': 0.5, 'cotton': 0.45, 
+        'organic cotton': 0.52, 'nylon': 0.25, 'polyester': 0.15, 'viscose': 0.3
+    }
+    total_resale = 0
+    cursor.execute("SELECT material FROM carbon_footprint WHERE username = ?", (user,))
+    all_items = cursor.fetchall()
+    for item in all_items:
+        mat = item[0].lower()
+        mult = resale_multipliers.get(mat, 0.2)
+        total_resale += 40 * mult
+    
+    total_resale = round(total_resale, 2)
+
+
+    # Fetch user's carbon footprint entries
+    cursor.execute("SELECT date, material, footprint FROM carbon_footprint WHERE username = ? ORDER BY date DESC", (user,))
+    data = cursor.fetchall()
+    conn.close()
 
     try:
         conn = get_db_connection()
@@ -839,8 +1112,59 @@ def user_data():
         cursor.execute("SELECT COALESCE(SUM(footprint), 0), COALESCE(AVG(footprint), 0) FROM carbon_footprint WHERE username=?", (user,))
         result = cursor.fetchone()
         total, avg = result if result else (0, 0)
+        
+        # Scikit-learn trend prediction
+        predicted_december = 0.0
+        forecast_msg = ""
+        forecast_val = 0.0
+        try:
+            cursor.execute("SELECT date, footprint FROM carbon_footprint WHERE username=? AND is_wearing_today=1 ORDER BY date", (user,))
+            records = cursor.fetchall()
+            
+            if len(records) > 2:
+                from sklearn.linear_model import LinearRegression
+                import numpy as np
+                
+                # Prepare cumulative footprint over time
+                X = []
+                y = []
+                cumulative = 0
+                start_date = datetime.strptime(records[0]['date'][:10], '%Y-%m-%d')
+                
+                for r in records:
+                    current_date = datetime.strptime(r['date'][:10], '%Y-%m-%d')
+                    days_since_start = (current_date - start_date).days
+                    cumulative += r['footprint']
+                    X.append([days_since_start])
+                    y.append(cumulative)
+                
+                model = LinearRegression().fit(X, y)
+                
+                # Predict for Dec 31 of current year
+                target_date = datetime(start_date.year, 12, 31)
+                days_to_target = (target_date - start_date).days
+                prediction = model.predict([[max(days_to_target, X[-1][0] + 30)]])[0]
+                forecast_val = round(prediction, 1)
+                predicted_december = max(total, forecast_val)
+                forecast_msg = "Projected annual footprint"
+        except Exception as e:
+            app.logger.error(f"Prediction Error: {e}")
 
-        return render_template('user-data.html', username=user, total_emission=total or 0, avg_emission=avg or 0)
+        return render_template(
+            'user-data.html', 
+            user=user_info,
+            username=user,
+            data=data, 
+            enumerate=enumerate, 
+            total_emission=total,
+            avg_emission=avg,
+            forecast_message=forecast_msg, 
+            forecast_val=forecast_val,
+            predicted_december=predicted_december,
+            monthly_emissions=monthly_emissions,
+            budget_kg=budget_kg,
+            total_resale=total_resale
+        )
     
     except Exception as e:
         app.logger.error(f"Error: {str(e)}")
@@ -893,29 +1217,19 @@ def user_graph(username):
         plt.tight_layout()
 
         # Ensure the 'static/graphs' directory exists
-        graph_dir = os.path.join(tempfile.gettempdir(), 'graphs')
-        os.makedirs(graph_dir, exist_ok=True)
-
-        # Save the graph to a file
-        graph_path = os.path.join(graph_dir, f"{username}_graph.png")
-        plt.savefig(graph_path)
-        plt.close()
-        app.logger.info(f"Graph saved at: {graph_path}")
-        if os.path.exists(graph_path):
-            app.logger.info(f"Graph file exists: {graph_path}")
-        else:
-            app.logger.error(f"Graph file does not exist: {graph_path}")
-            return render_template('error.html', message="Failed to generate graph."), 500
-
-        # Generate the URL for the graph image
-        graph_url = url_for('static', filename=f'graphs/{username}_graph.png')
-        app.logger.info(f"Graph URL: {graph_url}")
-
-        # Move the graph file to the static directory
         static_graph_dir = os.path.join(app.static_folder, 'graphs')
         os.makedirs(static_graph_dir, exist_ok=True)
-        static_graph_path = os.path.join(static_graph_dir, f"{username}_graph.png")
-        shutil.move(graph_path, static_graph_path)
+
+        # Save the graph directly to the static directory
+        graph_filename = f"{username}_graph.png"
+        static_graph_path = os.path.join(static_graph_dir, graph_filename)
+        plt.savefig(static_graph_path)
+        plt.close()
+        
+        app.logger.info(f"Graph saved at: {static_graph_path}")
+
+        # Generate the URL for the graph image
+        graph_url = url_for('static', filename=f'graphs/{graph_filename}')
         return render_template('graph.html', username=username, graph_url=graph_url)
 
     except Exception as e:
@@ -963,62 +1277,90 @@ def user_pie(username):
         return f"Error: {str(e)}", 500
     finally:
         conn.close()
-@app.route('/user-badge', methods=['GET'])
+@app.route('/api/user-pie-data')
+def api_user_pie_data():
+    user = session.get('user')
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT material, SUM(footprint) FROM carbon_footprint WHERE username=? GROUP BY material", (user,))
+        data = cursor.fetchall()
+        
+        labels = [row[0] for row in data]
+        values = [row[1] for row in data]
+        return jsonify({"labels": labels, "values": values}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching pie data: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        conn.close()
+
+@app.route('/user-badge')
 def user_badge():
     if 'user' not in session:
-        return jsonify({"error": "User not logged in"}), 401
+        return jsonify({"badge": "🌍", "title": "Guest"}), 401
 
     username = session['user']
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
+        
+        # Get user's own stats
+        cursor.execute("SELECT COUNT(*), AVG(footprint) FROM carbon_footprint WHERE username=?", (username,))
+        row = cursor.fetchone()
+        count = row[0]
+        avg = row[1] or 0.0
+
+        # Global ranking logic
         cursor.execute("""
-            SELECT users.username, SUM(carbon_footprint.footprint) as total_footprint, users.credit_points
-            FROM users
-            LEFT JOIN carbon_footprint ON users.username = carbon_footprint.username
-            WHERE users.username = ?
-            GROUP BY users.username
-        """, (username,))
-        user = cursor.fetchone()
-
-        if not user:
-            return jsonify({"error": "No data available for this user"}), 404
-
-        cursor.execute("""
-            SELECT COUNT(*) + 1 AS rank
-            FROM (
-                SELECT users.username
-                FROM users
-                LEFT JOIN carbon_footprint ON users.username = carbon_footprint.username
-                GROUP BY users.username
-                HAVING SUM(carbon_footprint.footprint) < ?
-            )
-        """, (user['total_footprint'],))
-        rank = cursor.fetchone()['rank']
-
-        # Assign title based on rank
-        if rank == 1:
-            title = "🏆 Eco Warrior"
-        elif rank <= 3:
-            title = "🥈 Green Advocate"
-        elif rank <= 10:
-            title = "🥉 Sustainability Champion"
+            SELECT username, SUM(footprint) as total_footprint
+            FROM carbon_footprint
+            GROUP BY username
+            ORDER BY total_footprint ASC
+        """)
+        all_users = cursor.fetchall()
+        
+        user_rank = 1
+        found = False
+        for i, u in enumerate(all_users):
+            if u['username'] == username:
+                user_rank = i + 1
+                found = True
+                break
+        
+        if not found:
+             # Basic title based on count/avg if no records
+             if count == 0:
+                 return jsonify({"badge": "🌱", "title": "Seedling", "rank": "N/A"})
+        
+        # Determine Title and Emoji Badge
+        if user_rank == 1 and count > 0:
+            badge, title = "🏆", "Eco Warrior"
+        elif avg > 0 and avg < 3.0:
+            badge, title = "🛡️", "Planet Guardian"
+        elif avg > 0 and avg < 5.0:
+            badge, title = "🌿", "Carbon Neutralist"
+        elif count > 5:
+            badge, title = "⚔️", "Eco-Warrior"
         else:
-            title = "🌍 Participant"
+            badge, title = "🌍", "Green Citizen"
 
         return jsonify({
-            "username": user['username'],
-            "total_footprint": user['total_footprint'] or 0,
-            "credit_points": user['credit_points'] or 0,
-            "rank": rank,
-            "title": title
+            "username": username,
+            "badge": badge,
+            "title": title,
+            "rank": user_rank,
+            "avg_footprint": round(avg, 2)
         })
 
     except Exception as e:
         app.logger.error(f"Error fetching user badge: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
     finally:
-        conn.close()        
+        conn.close()
 @app.route('/leaderboard')
 def leaderboard():
     conn = get_db_connection()
@@ -1183,6 +1525,109 @@ def get_eco_badge_class(rating):
 
 app.jinja_env.globals.update(get_eco_badge_class=get_eco_badge_class)
 
+
+@app.route('/api/user-pie-data')
+def user_pie_data():
+    user = session.get('user')
+    if not user:
+        return jsonify({"labels": [], "values": []})
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT material, SUM(footprint) as total 
+        FROM carbon_footprint 
+        WHERE username = ? 
+        GROUP BY material
+    """, (user,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    labels = [row[0] for row in rows]
+    values = [round(row[1], 2) for row in rows]
+    
+    return jsonify({"labels": labels, "values": values})
+
+
+
+@app.route('/api/scrape-product', methods=['GET'])
+def scrape_product():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"error": "No URL provided"}), 400
+    
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        text = soup.get_text().lower()
+        
+        # Heuristic for Material Scraper
+        # Look for percentages followed by material names
+        found_materials = []
+        materials_in_db = ["cotton", "polyester", "nylon", "wool", "viscose", "linen", "silk", "acrylic"]
+        
+        # Regex to find "80% Cotton" or "Cotton 80%"
+        for material in materials_in_db:
+            pattern = rf'(\d+)%\s*{material}|{material}\s*(\d+)%'
+            match = re.search(pattern, text)
+            if match:
+                percentage = match.group(1) or match.group(2)
+                found_materials.append({"material": material.capitalize(), "percentage": int(percentage)})
+        
+        # If no percentages found, just look for the first material mentioned
+        if not found_materials:
+            for material in materials_in_db:
+                if material in text:
+                    found_materials.append({"material": material.capitalize(), "percentage": 100})
+                    break
+
+        return jsonify({
+            "success": True,
+            "materials": found_materials,
+            "url": url,
+            "title": soup.title.string.strip() if soup.title else "Product Page"
+        })
+
+    except Exception as e:
+        app.logger.error(f"Scraping Error: {str(e)}")
+        return jsonify({"error": f"Failed to scrape URL: {str(e)}"}), 500
+
+@app.route('/api/ai-advice')
+def ai_advice():
+    user = session.get('user')
+    if not user:
+        return jsonify({"advice": "Please log in to receive personalized sustainability coaching."})
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT SUM(footprint), AVG(footprint), COUNT(*) FROM carbon_footprint WHERE username=?", (user,))
+    row = cursor.fetchone()
+    total = row[0] or 0
+    avg = row[1] or 0
+    count = row[2] or 0
+    conn.close()
+
+    if count == 0:
+        advice = "Your journey starts here! Try calculating your first item to see where you stand."
+    elif total > 50:
+        advice = f"Your total footprint is {total:.1f}kg. This is equivalent to driving a car for 200 miles! Consider switching your most frequent material (Nylon/Polyester) to Organic Cotton to cut emissions by 40%."
+    elif avg > 7:
+        advice = "Your average item impact is high. This is common with fast-fashion brands. Try buying from certified B-Corp brands or secondhand markets to lower your average."
+    elif avg < 3:
+        advice = "Amazing! You are in the top 10% of sustainable shoppers. Your low-impact choices are setting a gold standard for the community."
+    else:
+        advice = "You're doing great! Small changes like air-drying your clothes instead of machine-drying can further reduce your footprint by up to 15%."
+
+    return jsonify({
+        "success": True,
+        "advice": advice,
+        "total": round(total, 2)
+    })
 
 @app.route('/admin/view-analytics')
 def view_analytics():

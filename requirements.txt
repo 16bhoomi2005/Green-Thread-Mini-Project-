@@ -1,0 +1,11 @@
+flask
+requests
+python-dotenv
+matplotlib
+numpy
+werkzeug
+pytz
+beautifulsoup4
+scikit-learn
+Pillow
+gunicorn
