@@ -1021,11 +1021,16 @@ def calculate():
         carbon_footprint = round(carbon_footprint, 2)
 
         # Calculate Resale Index (Circular Economy Feature)
+        mat_key = material.lower() # Fix mat_key NameError
         resale_multipliers = {
             'linen': 0.6, 'wool': 0.55, 'silk': 0.5, 'cotton': 0.45, 
             'organic cotton': 0.52, 'nylon': 0.25, 'polyester': 0.15, 'viscose': 0.3
         }
-        material_mult = resale_multipliers.get(mat_key, 0.2)
+        material_mult = resale_multipliers.get(mat_key.replace(' (conventional)', ''), 0.2)
+        
+        # Calculate other footprint metrics
+        water_liters = FABRIC_WATER_LITERS_PER_KG.get(mat_key, 100) * weight
+        micro_grams = FABRIC_MICROPLASTICS_GRAMS_PER_KG.get(mat_key, 0) * weight
         
         # Brand impact on resale
         brand_resale_mult = 1.0
@@ -1175,8 +1180,8 @@ def user_data():
             conn.close()  # Close connection only if it was opened
 
 
-@app.route('/user-graph/<username>')
-def user_graph(username):
+@app.route('/user-graph-img/<username>')
+def user_graph_img(username):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -1189,26 +1194,20 @@ def user_graph(username):
         data = cursor.fetchall()
 
         if not data:
-            return render_template('error.html', message="No data available for this user."), 404
+            return "No data", 404
 
-        # Extract data from the query result
         dates = [row['date'] for row in data]
         emissions = [row['footprint'] for row in data]
         wearing_today = [row['is_wearing_today'] for row in data]
 
-        # Plot the carbon footprint over time
         plt.figure(figsize=(8, 4))
         plt.plot(dates, emissions, marker='o', linestyle='-', color='b', label='Carbon Footprint')
-
-        # Plot points only if the user is wearing the item today
         if any(wearing_today):
             plt.scatter(
                 [date for date, wt in zip(dates, wearing_today) if wt],
                 [em for em, wt in zip(emissions, wearing_today) if wt],
                 color='r', label='Wearing Today'
             )
-
-        # Customize the graph
         plt.xlabel("Date")
         plt.ylabel("Carbon Footprint")
         plt.title(f"{username}'s Carbon Footprint Over Time")
@@ -1216,67 +1215,47 @@ def user_graph(username):
         plt.legend()
         plt.tight_layout()
 
-        # Ensure the 'static/graphs' directory exists
-        static_graph_dir = os.path.join(app.static_folder, 'graphs')
-        os.makedirs(static_graph_dir, exist_ok=True)
-
-        # Save the graph directly to the static directory
-        graph_filename = f"{username}_graph.png"
-        static_graph_path = os.path.join(static_graph_dir, graph_filename)
-        plt.savefig(static_graph_path)
+        img = BytesIO()
+        plt.savefig(img, format='png')
         plt.close()
-        
-        app.logger.info(f"Graph saved at: {static_graph_path}")
-
-        # Generate the URL for the graph image
-        graph_url = url_for('static', filename=f'graphs/{graph_filename}')
-        return render_template('graph.html', username=username, graph_url=graph_url)
-
+        img.seek(0)
+        return send_file(img, mimetype='image/png')
     except Exception as e:
-        app.logger.error(f"Error: {str(e)}")
-        return render_template('error.html', message=f"An error occurred: {str(e)}"), 500
+        app.logger.error(f"Error serving graph: {str(e)}")
+        return str(e), 500
     finally:
         conn.close()
-@app.route('/user-pie/<username>')
-def user_pie(username):
+
+@app.route('/user-graph/<username>')
+def user_graph(username):
+    return render_template('graph.html', username=username, graph_url=url_for('user_graph_img', username=username))
+@app.route('/user-pie-img/<username>')
+def user_pie_img(username):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT material, SUM(footprint) FROM carbon_footprint WHERE username=? GROUP BY material", (username,))
         data = cursor.fetchall()
-
         if not data:
-            return render_template('error.html', message="No data available for this user."), 404
-
-        # Extract labels (materials) and values (footprint sum)
+            return "No data", 404
         labels = [row[0] for row in data]
         values = [row[1] for row in data]
-
-        if not values:
-            return render_template('error.html', message="No footprint data available for pie chart."), 400
-
-        # Ensure the static/graphs directory exists
-        graph_dir = "static/graphs/"
-        if not os.path.exists(graph_dir):
-            os.makedirs(graph_dir)
-
-        # Save Pie Chart
-        pie_chart_path = os.path.join(graph_dir, f"{username}_pie.png")
         colors = plt.cm.Paired(np.linspace(0, 1, len(labels)))
         plt.figure(figsize=(6, 6))
         plt.pie(values, labels=labels, autopct='%1.1f%%', colors=colors)
         plt.title(f"{username}'s Carbon Footprint Breakdown")
-        plt.savefig(pie_chart_path)
+        
+        img = BytesIO()
+        plt.savefig(img, format='png')
         plt.close()
-
-        # Pass the image URL to the HTML template
-        return render_template('pie_chart.html', username=username, pie_chart_url=f"/{pie_chart_path}")
-
-    except Exception as e:
-        app.logger.error(f"Error: {str(e)}")
-        return f"Error: {str(e)}", 500
+        img.seek(0)
+        return send_file(img, mimetype='image/png')
     finally:
         conn.close()
+
+@app.route('/user-pie/<username>')
+def user_pie(username):
+    return render_template('pie_chart.html', username=username, pie_chart_url=url_for('user_pie_img', username=username))
 @app.route('/api/user-pie-data')
 def api_user_pie_data():
     user = session.get('user')
@@ -1406,6 +1385,39 @@ def leaderboard():
         return f"Error: {str(e)}", 500
     finally:
         conn.close()
+@app.route('/weekly-graph-img/<username>')
+def weekly_graph_img(username):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT strftime('%W', date) AS week, SUM(footprint) as total_emission
+            FROM carbon_footprint
+            WHERE username=?
+            GROUP BY week
+            ORDER BY week;
+        """, (username,))
+        data = cursor.fetchall()
+        if not data:
+            return "No data", 404
+        weeks = [int(row['week']) for row in data]
+        emissions = [row['total_emission'] for row in data]
+        weeks_numeric = np.arange(len(weeks))
+        emissions_smooth = np.interp(weeks_numeric, weeks_numeric, emissions)
+        plt.figure(figsize=(9, 5), facecolor='#F5F5F5')
+        plt.plot(weeks_numeric, emissions_smooth, marker='o', linestyle='-', color='#4A90E2', linewidth=2.5, alpha=0.9)
+        plt.fill_between(weeks_numeric, emissions_smooth, color='#4A90E2', alpha=0.3)
+        plt.xticks(weeks_numeric, [f"Week {w}" for w in weeks], rotation=30)
+        plt.title(f"{username}'s Weekly Data")
+        
+        img = BytesIO()
+        plt.savefig(img, format='png')
+        plt.close()
+        img.seek(0)
+        return send_file(img, mimetype='image/png')
+    finally:
+        conn.close()
+
 @app.route('/weekly-graph')
 def weekly_graph():
     user = session.get('user')
@@ -1427,64 +1439,26 @@ def weekly_graph():
         if not data:
             return render_template('error.html', message="No data available for this user."), 404
 
-        weeks = [int(row['week']) for row in data]  # Convert to int for sorting
+        # Statistics processing...
         emissions = [row['total_emission'] for row in data]
-
-        cursor.execute("""
-            SELECT date, footprint FROM carbon_footprint
-            WHERE username=? ORDER BY footprint ASC LIMIT 1;
-        """, (user,))
+        cursor.execute("SELECT date, footprint FROM carbon_footprint WHERE username=? ORDER BY footprint ASC LIMIT 1", (user,))
         best_day_row = cursor.fetchone()
         best_day = best_day_row['date'] if best_day_row else "N/A"
         best_day_emission = best_day_row['footprint'] if best_day_row else 0
-
-        cursor.execute("""
-            SELECT date, footprint FROM carbon_footprint
-            WHERE username=? ORDER BY footprint DESC LIMIT 1;
-        """, (user,))
+        
+        cursor.execute("SELECT date, footprint FROM carbon_footprint WHERE username=? ORDER BY footprint DESC LIMIT 1", (user,))
         worst_day_row = cursor.fetchone()
         worst_day = worst_day_row['date'] if worst_day_row else "N/A"
         worst_day_emission = worst_day_row['footprint'] if worst_day_row else 0
 
-    # Calculate emission change
         last_week_emission = emissions[-2] if len(emissions) > 1 else 0
         comparison = "↓ Reduced" if emissions[-1] < last_week_emission else "↑ Increased"
-    
-    # Calculate streak
         reduced_emission = emissions[-1] < last_week_emission
         streak = 1 if reduced_emission else 0
-        
-        weeks_numeric = np.arange(len(weeks))
-        emissions_smooth = np.interp(weeks_numeric, weeks_numeric, emissions)
-
-        plt.figure(figsize=(9, 5), facecolor='#F5F5F5')  # Light gray background
-        plt.plot(weeks_numeric, emissions_smooth, marker='o', linestyle='-', color='#4A90E2', linewidth=2.5, alpha=0.9, label="Carbon Footprint")
-
-        # Add gradient fill under the line
-        plt.fill_between(weeks_numeric, emissions_smooth, color='#4A90E2', alpha=0.3)
-
-        # Aesthetics
-        plt.xticks(weeks_numeric, [f"Week {w}" for w in weeks], rotation=30, fontsize=10)
-        plt.yticks(fontsize=10)
-        plt.xlabel("Week", fontsize=12, fontweight='bold', color='#555')
-        plt.ylabel("Total Carbon Footprint", fontsize=12, fontweight='bold', color='#555')
-        plt.title(f"{user}'s Weekly Carbon Footprint", fontsize=14, fontweight='bold', color='#333')
-        plt.grid(axis='y', linestyle='--', alpha=0.5)  # Light gridlines
-
-        # Save the graph
-        graph_path = f"static/graphs/{user}_weekly.png"
-        plt.savefig(graph_path, dpi=100, bbox_inches='tight')
-        plt.close()
-        print("Total Emission:", emissions[-1])
-        print("Last Week Emission:", last_week_emission)
-        print("Comparison:", comparison)
-        print("Best Day:", best_day, best_day_emission)
-        print("Worst Day:", worst_day, worst_day_emission)
-        print("Streak:", streak)
 
         return render_template('weekly_graph.html', 
                            username=user, 
-                           graph_url=url_for('static', filename=f'graphs/{user}_weekly.png'),
+                           graph_url=url_for('weekly_graph_img', username=user),
                            total_emission=emissions[-1],
                            last_week_emission=last_week_emission,
                            comparison=comparison,
@@ -1494,9 +1468,6 @@ def weekly_graph():
                            worst_day_emission=worst_day_emission,
                            streak=streak,
                            reduced_emission=reduced_emission)
-    except Exception as e:
-        app.logger.error(f"Error: {str(e)}")
-        return f"Error: {str(e)}", 500
     finally:
         conn.close()
 
